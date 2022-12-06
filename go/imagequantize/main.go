@@ -63,6 +63,30 @@ func main() {
 	dstImage := image.NewPaletted(bounds.Bounds(), palette)
 	draw.Draw(dstImage, dstImage.Rect, srcImage, bounds.Min, draw.Over)
 
+	// Apply a palette mapping.
+	newPalette := []color.Color{}
+	const colorDiv = 2
+	for r := 0; r <= colorDiv; r++ {
+		rVal := r * 255 / colorDiv
+		for g := 0; g <= colorDiv; g++ {
+			gVal := g * 255 / colorDiv
+			for b := 0; b <= colorDiv; b++ {
+				bVal := b * 255 / colorDiv
+				newPalette = append(newPalette, color.RGBA{
+					R: uint8(rVal),
+					G: uint8(gVal),
+					B: uint8(bVal),
+					A: 255,
+				})
+			}
+		}
+	}
+	mapping, err := mapNearestGreedy(palette, newPalette)
+	if err != nil {
+		panic(err)
+	}
+	dstImage = applyPaletteMap(dstImage, mapping)
+
 	// Write out the new image.
 	if err := writeJPEG(*dstPath, dstImage); err != nil {
 		panic(err)
@@ -77,8 +101,7 @@ func colorPaletteFromImage(img image.Image, numColors int) color.Palette {
 	data := make([]kmeans.Point, 0, bounds.Dx()*bounds.Dy())
 	for x := bounds.Min.X; x < bounds.Max.X; x++ {
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-			r, g, b, _ := img.At(x, y).RGBA()
-			data = append(data, kmeans.Point{int(r), int(g), int(b)})
+			data = append(data, ColorToPoint(img.At(x, y)))
 		}
 	}
 
@@ -130,4 +153,63 @@ func readImage(path string) (image.Image, error) {
 		return nil, err
 	}
 	return img, nil
+}
+
+func ColorToPoint(c color.Color) kmeans.Point {
+	r, g, b, _ := c.RGBA()
+	return kmeans.Point{int(r), int(g), int(b)}
+}
+
+func mapNearestGreedy(oldPalette, newPalette color.Palette) (map[color.Color]color.Color, error) {
+	if len(newPalette) < len(oldPalette) {
+		return nil, fmt.Errorf("new palette has fewer colors than the old, %d vs %d", len(newPalette), len(oldPalette))
+	}
+
+	origMap := make(map[color.Color]bool, len(oldPalette))
+	for _, color := range oldPalette {
+		origMap[color] = true
+	}
+	newMap := make(map[color.Color]bool, len(newPalette))
+	for _, color := range newPalette {
+		newMap[color] = true
+	}
+
+	rv := make(map[color.Color]color.Color, len(oldPalette))
+	for {
+		minDist := -1
+		var chosenOrig color.Color
+		var chosenNew color.Color
+		for origColor := range origMap {
+			for newColor := range newMap {
+				dist := ColorToPoint(origColor).SqDist(ColorToPoint(newColor))
+				if minDist < 0 || dist < minDist {
+					minDist = dist
+					chosenOrig = origColor
+					chosenNew = newColor
+				}
+			}
+		}
+		rv[chosenOrig] = chosenNew
+		delete(origMap, chosenOrig)
+		delete(newMap, chosenNew)
+		if len(origMap) == 0 {
+			break
+		}
+	}
+	return rv, nil
+}
+
+func applyPaletteMap(img *image.Paletted, mapping map[color.Color]color.Color) *image.Paletted {
+	bounds := img.Bounds()
+	palette := make([]color.Color, 0, len(mapping))
+	for _, c := range mapping {
+		palette = append(palette, c)
+	}
+	rv := image.NewPaletted(bounds.Bounds(), palette)
+	for x := bounds.Min.X; x < bounds.Max.X; x++ {
+		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+			rv.Set(x, y, mapping[img.At(x, y)])
+		}
+	}
+	return rv
 }
