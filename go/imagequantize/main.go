@@ -13,6 +13,8 @@ import (
 	"github.com/erock2112/kmeans/go/kmeans"
 )
 
+const maxKMeansIterations = 1000
+
 func main() {
 	// Setup.
 	srcPath := flag.String("src", "", "Source image path.")
@@ -81,8 +83,10 @@ func colorPaletteFromImage(img image.Image, numColors int) color.Palette {
 	}
 
 	// Find the k-means of the pixels and create a color palette.
-	centroids, iterations := kmeans.KMeans(numColors, data)
-	fmt.Printf("Finished in %d iterations\n", iterations)
+	centroids, err := kmeans.KMeans(data, numColors, maxKMeansIterations)
+	if err != nil {
+		panic("colorPaletteFromImage produced inconsistent data")
+	}
 	var palette color.Palette = make([]color.Color, 0, len(centroids))
 	for _, centroid := range centroids {
 		palette = append(palette, color.RGBA{

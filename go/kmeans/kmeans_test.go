@@ -10,7 +10,8 @@ import (
 func TestKMeans(t *testing.T) {
 	test := func(name string, data []Point, k int, expect []Point) {
 		t.Run(name, func(t *testing.T) {
-			actual, _ := KMeans(k, data)
+			actual, err := KMeans(data, k, 100)
+			require.NoError(t, err)
 			sort.Sort((PointSlice(actual)))
 			require.Equal(t, expect, actual)
 		})

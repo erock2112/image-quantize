@@ -1,26 +1,32 @@
 package kmeans
 
 import (
+	"fmt"
 	"math/rand"
 )
 
-const (
-	Dimensions    = 3
-	maxIterations = 1000
-)
+// KMeans implements a naive k-means algorithm. Note: all of the Points in the
+// provided data must have the same dimensionality.
+func KMeans(data []Point, k, maxIterations int) ([]Point, error) {
+	dimensions := -1
+	for _, point := range data {
+		if dimensions == -1 {
+			dimensions = len(point)
+		} else if len(point) != dimensions {
+			return nil, fmt.Errorf("provided data does not have uniform dimensionality, found %d and %d", dimensions, len(point))
+		}
+	}
 
-// KMeans implements a naive k-means algorithm.
-func KMeans(k int, data []Point) ([]Point, int) {
 	centroids := chooseInitialCentroids(data, k)
 	for iterations := 0; iterations < maxIterations; iterations++ {
 		oldCentroids := centroids
 		nearestCentroids := findClosestCentroids(data, centroids)
 		centroids = computeNewCentroids(data, nearestCentroids, centroids)
 		if centroids.Equal(oldCentroids) {
-			return centroids, iterations
+			return centroids, nil
 		}
 	}
-	return centroids, maxIterations
+	return centroids, nil
 }
 
 // computeNewCentroids using the data assigned to each centroid.
@@ -29,6 +35,9 @@ func computeNewCentroids(data PointSlice, nearestCentroids []int, centroids Poin
 	counts := make([]int, len(centroids))
 	for idx, point := range data {
 		nearestIdx := nearestCentroids[idx]
+		if sum := sums[nearestIdx]; sum == nil {
+			sums[nearestIdx] = Point(make([]int, len(data[0])))
+		}
 		sums[nearestIdx].Add(point)
 		counts[nearestIdx]++
 	}
@@ -81,7 +90,7 @@ func chooseInitialCentroids(data PointSlice, k int) PointSlice {
 }
 
 // Point represents a single data point.
-type Point [Dimensions]int
+type Point []int
 
 // Equal returns true if the two Points are equal.
 func (p Point) Equal(other Point) bool {
@@ -94,14 +103,14 @@ func (p Point) Equal(other Point) bool {
 }
 
 // Add adds the other Point to this one.
-func (p *Point) Add(other Point) {
+func (p Point) Add(other Point) {
 	for idx := range p {
 		p[idx] += other[idx]
 	}
 }
 
 // Divide divides each element of the Point by the given scalar.
-func (p *Point) Divide(scalar int) {
+func (p Point) Divide(scalar int) {
 	for idx := range p {
 		p[idx] /= scalar
 	}
