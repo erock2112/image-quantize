@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/erock2112/kmeans/go/kmeans"
 	"github.com/erock2112/kmeans/go/palette"
 )
 
@@ -39,7 +38,7 @@ func main() {
 	bounds := srcImage.Bounds()
 
 	// Create the color srcPalette.
-	srcPalette := colorPaletteFromImage(srcImage, *numColors)
+	srcPalette := palette.FromImage(srcImage, *numColors, maxKMeansIterations)
 
 	// Write the palette itself to a file.
 	if err := writePaletteToFile(srcPalette, filepath.Join(*dir, "palette.jpg")); err != nil {
@@ -61,7 +60,7 @@ func main() {
 	}
 
 	// Map the old palette onto the new.
-	mapping, err := mapNearestGreedy(srcPalette, newPalette)
+	mapping, err := palette.MapNearestGreedy(srcPalette, newPalette)
 	if err != nil {
 		panic(err)
 	}
@@ -69,41 +68,15 @@ func main() {
 	for k, v := range mapping {
 		fmt.Printf("  %v -> %v\n", k, v)
 	}
-	dstImage = applyPaletteMap(dstImage, mapping)
-
-	// Write out the new image.
-	if err := writeJPEG(filepath.Join(*dir, "with_new_palette.jpg"), dstImage); err != nil {
+	dstImage, err = mapping.Apply(dstImage)
+	if err != nil {
 		panic(err)
 	}
-}
 
-// colorPaletteFromImage creates a color.Palette from the given image.Image with
-// the given number of colors.
-func colorPaletteFromImage(img image.Image, numColors int) color.Palette {
-	// Read all of the pixels into an array.
-	bounds := img.Bounds()
-	data := make([]kmeans.Point, 0, bounds.Dx()*bounds.Dy())
-	for x := bounds.Min.X; x < bounds.Max.X; x++ {
-		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-			data = append(data, palette.ColorToPoint(img.At(x, y)))
-		}
+	// Write out the new image.
+	if err := writeJPEG(filepath.Join(*dir, "greedy_mapping.jpg"), dstImage); err != nil {
+		panic(err)
 	}
-
-	// Find the k-means of the pixels and create a color palette.
-	centroids, err := kmeans.KMeans(data, numColors, maxKMeansIterations)
-	if err != nil {
-		panic("colorPaletteFromImage produced inconsistent data")
-	}
-	var palette color.Palette = make([]color.Color, 0, len(centroids))
-	for _, centroid := range centroids {
-		palette = append(palette, color.RGBA{
-			R: uint8(centroid[0] >> 8),
-			G: uint8(centroid[1] >> 8),
-			B: uint8(centroid[2] >> 8),
-			A: 255,
-		})
-	}
-	return palette
 }
 
 func writePaletteToFile(palette color.Palette, path string) error {
@@ -151,58 +124,4 @@ func readImage(path string) (image.Image, error) {
 		return nil, err
 	}
 	return img, nil
-}
-
-func mapNearestGreedy(oldPalette, newPalette color.Palette) (map[color.Color]color.Color, error) {
-	if len(newPalette) < len(oldPalette) {
-		return nil, fmt.Errorf("new palette has fewer colors than the old, %d vs %d", len(newPalette), len(oldPalette))
-	}
-
-	origMap := make(map[color.Color]bool, len(oldPalette))
-	for _, color := range oldPalette {
-		origMap[color] = true
-	}
-	newMap := make(map[color.Color]bool, len(newPalette))
-	for _, color := range newPalette {
-		newMap[color] = true
-	}
-
-	rv := make(map[color.Color]color.Color, len(oldPalette))
-	for {
-		minDist := -1
-		var chosenOrig color.Color
-		var chosenNew color.Color
-		for origColor := range origMap {
-			for newColor := range newMap {
-				dist := palette.ColorToPoint(origColor).SqDist(palette.ColorToPoint(newColor))
-				if minDist < 0 || dist < minDist {
-					minDist = dist
-					chosenOrig = origColor
-					chosenNew = newColor
-				}
-			}
-		}
-		rv[chosenOrig] = chosenNew
-		delete(origMap, chosenOrig)
-		delete(newMap, chosenNew)
-		if len(origMap) == 0 {
-			break
-		}
-	}
-	return rv, nil
-}
-
-func applyPaletteMap(img *image.Paletted, mapping map[color.Color]color.Color) *image.Paletted {
-	bounds := img.Bounds()
-	palette := make([]color.Color, 0, len(mapping))
-	for _, c := range mapping {
-		palette = append(palette, c)
-	}
-	rv := image.NewPaletted(bounds.Bounds(), palette)
-	for x := bounds.Min.X; x < bounds.Max.X; x++ {
-		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-			rv.Set(x, y, mapping[img.At(x, y)])
-		}
-	}
-	return rv
 }
