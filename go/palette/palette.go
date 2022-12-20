@@ -205,7 +205,7 @@ func MapNearestBruteForce(src, dst color.Palette) (Map, error) {
 	if len(dst) < len(src) {
 		return nil, fmt.Errorf("src palette has fewer colors than the dst, %d vs %d", len(dst), len(src))
 	}
-	// TODO
+
 	return nil, nil
 }
 
@@ -213,7 +213,7 @@ func MapNearestBruteForce(src, dst color.Palette) (Map, error) {
 // n. The return value can be used as indexes into arrays or slices.
 // TODO: This belongs in a math package of some kind.
 func NChooseK(n, k int) [][]int {
-	rv := [][]int{}
+	var rv [][]int
 	scratch := make([]int, k)
 	var nChooseKHelper func(remaining, start int)
 	nChooseKHelper = func(remaining, start int) {
@@ -229,5 +229,36 @@ func NChooseK(n, k int) [][]int {
 		}
 	}
 	nChooseKHelper(k, 0)
+	return rv
+}
+
+// Permute computes all possible permutations of n elements. The return value
+// can be used as indexes into arrays or slices. This is an implementation of
+// Heap's algorithm.
+// TODO: This belongs in a math package of some kind.
+func Permute(n int) [][]int {
+	var rv [][]int
+	scratch := make([]int, 0, n)
+	for i := 0; i < n; i++ {
+		scratch = append(scratch, i)
+	}
+	var helper func(size int)
+	helper = func(size int) {
+		if size == 1 {
+			cp := make([]int, len(scratch))
+			copy(cp, scratch)
+			rv = append(rv, cp)
+			return
+		}
+		for i := 0; i < size; i++ {
+			helper(size - 1)
+			if size%2 == 1 {
+				scratch[0], scratch[size-1] = scratch[size-1], scratch[0]
+			} else {
+				scratch[i], scratch[size-1] = scratch[size-1], scratch[i]
+			}
+		}
+	}
+	helper(n)
 	return rv
 }
