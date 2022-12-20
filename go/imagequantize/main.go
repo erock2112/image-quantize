@@ -20,8 +20,10 @@ func main() {
 	// Setup.
 	dir := flag.String("dir", "", "Directory containing images. Expect 'src.jpg' to be present.")
 	numColors := flag.Int("colors", 0, "Number of colors to use in the palette.")
+	remapColor := flag.String("remap_color", "", "Hexadecimal color to remap onto, eg. \"#22459E\"")
+	invert := flag.Bool("invert", false, "Invert the image after quantizing.")
+
 	flag.Parse()
-	palettizedPath := filepath.Join(*dir, "palettized.jpg")
 	if *dir == "" {
 		panic("--dir is required.")
 	}
@@ -41,74 +43,62 @@ func main() {
 	srcPalette := palette.FromImage(srcImage, *numColors, maxKMeansIterations)
 
 	// Write the palette itself to a file.
+	srcPalette = palette.SortedByLuminosity(srcPalette)
 	if err := writePaletteToFile(srcPalette, filepath.Join(*dir, "palette.jpg")); err != nil {
-		panic(err)
-	}
-	srcSorted := make([]color.Color, len(srcPalette))
-	copy(srcSorted, srcPalette)
-	palette.SortByLuminosity(srcSorted)
-	if err := writePaletteToFile(srcSorted, filepath.Join(*dir, "palette_sorted.jpg")); err != nil {
 		panic(err)
 	}
 
 	// Apply the palette to the image.
 	dstImage := image.NewPaletted(bounds.Bounds(), srcPalette)
 	draw.Draw(dstImage, dstImage.Rect, srcImage, bounds.Min, draw.Over)
-	if err := writeJPEG(palettizedPath, dstImage); err != nil {
+	if err := writeJPEG(filepath.Join(*dir, "quantized.jpg"), dstImage); err != nil {
 		panic(err)
 	}
 
-	// Create a new palette.
-	newPalette := palette.Monochrome(color.RGBA{R: 34, G: 69, B: 158, A: 255}, *numColors)
-	//newPalette := palette.Subdivide(3)
-	palette.SortByLuminosity(newPalette)
-	if err := writePaletteToFile(newPalette, filepath.Join(*dir, "new_palette.jpg")); err != nil {
-		panic(err)
-	}
-
-	// Map the old palette onto the new.
-	{
-		fmt.Printf("Before: %v\n", srcSorted)
-		//_, err := palette.MapByLuminosity(srcPalette, newPalette)
-		//if err != nil {
-		//	panic(err)
-		//}
-		//palette.SortByLuminosity(srcPalette)
-		fmt.Printf("After:  %v\n", srcSorted)
-		/*
-			fmt.Println("Mapping:")
-			for k, v := range mapping {
-				fmt.Printf("  %v -> %v\n", k, v)
-			} /*
-				dstImageNonSorted, err := mapping.Apply(dstImage)
-				if err != nil {
-					panic(err)
-				}
-				if err := writeJPEG(filepath.Join(*dir, "luminosity_nonpresorted.jpg"), dstImageNonSorted); err != nil {
-					panic(err)
-				}*/
-	}
-
-	{
-		mappingSorted, err := palette.MapByLuminosity(srcSorted, newPalette)
+	if *invert {
+		invertedPalette := palette.InvertPalette(srcPalette)
+		mapping, err := palette.MapDirect(srcPalette, invertedPalette)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("Mapping (pre-sorted):")
-		for k, v := range mappingSorted {
-			fmt.Printf("  %v -> %v\n", k, v)
-		}
-		dstImagePreSorted, err := mappingSorted.Apply(dstImage)
+		dstImage, err = mapping.Apply(dstImage)
 		if err != nil {
 			panic(err)
 		}
-		if err := writeJPEG(filepath.Join(*dir, "luminosity_presorted.jpg"), dstImagePreSorted); err != nil {
+		if err := writeJPEG(filepath.Join(*dir, "inverted.jpg"), dstImage); err != nil {
+			panic(err)
+		}
+		srcPalette = invertedPalette
+	}
+
+	if *remapColor != "" {
+		remapColorVal, err := palette.HexToColor(*remapColor)
+		if err != nil {
+			panic(err)
+		}
+
+		// Create a new palette.
+		newPalette := palette.Monochrome(remapColorVal, *numColors)
+		newPalette = palette.SortedByLuminosity(newPalette)
+		if err := writePaletteToFile(newPalette, filepath.Join(*dir, "new_palette.jpg")); err != nil {
+			panic(err)
+		}
+
+		// Map the old palette onto the new.
+		mapping, err := palette.MapByLuminosity(srcPalette, newPalette)
+		if err != nil {
+			panic(err)
+		}
+		dstImage, err = mapping.Apply(dstImage)
+		if err != nil {
 			panic(err)
 		}
 	}
 
 	// Write out the new image.
-
+	if err := writeJPEG(filepath.Join(*dir, "dst.jpg"), dstImage); err != nil {
+		panic(err)
+	}
 }
 
 func writePaletteToFile(palette color.Palette, path string) error {

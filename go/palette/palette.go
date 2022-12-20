@@ -5,7 +5,9 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"regexp"
 	"sort"
+	"strconv"
 
 	"github.com/erock2112/kmeans/go/kmeans"
 )
@@ -144,10 +146,6 @@ func (m Map) Apply(src *image.Paletted) (*image.Paletted, error) {
 	for _, c := range m {
 		palette = append(palette, c)
 	}
-	fmt.Printf("Creating new image from palette mapping:\n")
-	for k, v := range m {
-		fmt.Printf("  %v -> %v\n", k, v)
-	}
 	rv := image.NewPaletted(bounds.Bounds(), palette)
 	for x := bounds.Min.X; x < bounds.Max.X; x++ {
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
@@ -247,12 +245,30 @@ func MapNearestBruteForce(src, dst color.Palette) (Map, error) {
 	return bestMap, nil
 }
 
-// SortByLuminosity sorts the Palette by luminosity.
-func SortByLuminosity(p color.Palette) {
-	sort.Stable(ColorPaletteByLuminosity(p))
+// SortedByLuminosity returns a copy of the Palette sorted by luminosity.
+func SortedByLuminosity(p color.Palette) []color.Color {
+	// Something about the fact that color.Color is a non-pointer interface
+	// causes weird problems when we sort a []color.Color instead of the
+	// concrete type.
+	rgba := make([]color.RGBA, 0, len(p))
+	for _, c := range p {
+		r, g, b, a := c.RGBA()
+		rgba = append(rgba, color.RGBA{
+			R: uint8(r >> 8),
+			G: uint8(g >> 8),
+			B: uint8(b >> 8),
+			A: uint8(a >> 8),
+		})
+	}
+	sort.Sort(ColorPaletteByLuminosity(rgba))
+	rv := make([]color.Color, 0, len(rgba))
+	for _, c := range rgba {
+		rv = append(rv, color.Color(c))
+	}
+	return rv
 }
 
-type ColorPaletteByLuminosity []color.Color
+type ColorPaletteByLuminosity []color.RGBA
 
 func (p ColorPaletteByLuminosity) Len() int {
 	return len(p)
@@ -270,72 +286,22 @@ func (p ColorPaletteByLuminosity) Swap(i, j int) {
 
 // MapByLuminosity maps the source palette to the destination by first finding
 // the luminosity of each color and sorting. The source and destination palettes
-// should be the same size.
+// must be the same size.
 func MapByLuminosity(src, dst color.Palette) (Map, error) {
+	return MapDirect(SortedByLuminosity(src), SortedByLuminosity(dst))
+}
+
+// MapDirect maps the source palette directly to the destination palette without
+// any processing. The source and destination palettes must be the same size.
+func MapDirect(src, dst color.Palette) (Map, error) {
 	if len(src) != len(dst) {
-		return nil, fmt.Errorf("src and dst palettes should be the same size, %d vs %d", len(dst), len(src))
+		return nil, fmt.Errorf("src and dst palettes must be the same size, %d vs %d", len(dst), len(src))
 	}
-	/*fmt.Println("src (before):")
-	for _, c := range src {
-		fmt.Printf("  Lum(%+v): %d\n", c, Luminosity(c))
-	}*/
-	SortByLuminosity(src)
-	/*fmt.Println("src (after):")
-	for _, c := range src {
-		fmt.Printf("  Lum(%+v): %d\n", c, Luminosity(c))
-	}*/
-	SortByLuminosity(dst)
-	/*fmt.Println("dst:")
-	for _, c := range dst {
-		fmt.Printf("  Lum(%+v): %d\n", c, Luminosity(c))
-	}*/
 	rv := make(map[color.Color]color.Color, len(src))
 	for idx, srcColor := range src {
 		rv[srcColor] = dst[idx]
 	}
 	return rv, nil
-
-	/*
-		srcMap := make(map[int][]color.Color, len(src))
-		srcLuminosities := make([]int, 0, len(src))
-		for _, c := range src {
-			l := int(Luminosity(c))
-			srcMap[l] = append(srcMap[l], c)
-			srcLuminosities = append(srcLuminosities, l)
-		}
-		sort.Ints(srcLuminosities)
-		srcSorted := make([]color.Color, 0, len(srcLuminosities))
-		for _, l := range srcLuminosities {
-			colors, ok := srcMap[l]
-			if ok {
-				srcSorted = append(srcSorted, colors...)
-				delete(srcMap, l)
-			}
-		}
-
-		dstMap := make(map[int][]color.Color, len(dst))
-		dstLuminosities := make([]int, 0, len(dst))
-		for _, c := range dst {
-			l := int(Luminosity(c))
-			dstMap[l] = append(dstMap[l], c)
-			dstLuminosities = append(dstLuminosities, l)
-		}
-		sort.Ints(dstLuminosities)
-		dstSorted := make([]color.Color, 0, len(dstLuminosities))
-		for _, l := range dstLuminosities {
-			colors, ok := dstMap[l]
-			if ok {
-				dstSorted = append(dstSorted, colors...)
-				delete(dstMap, l)
-			}
-		}
-
-		rv := make(map[color.Color]color.Color, len(srcSorted))
-		for idx, srcColor := range srcSorted {
-			rv[srcColor] = dstSorted[idx]
-		}
-		return rv, nil
-	*/
 }
 
 // NChooseK returns all combinations of choosing k elements from a set of size
@@ -410,4 +376,48 @@ func Greyscale(c color.Color) color.Color {
 		B: l,
 		A: math.MaxUint8,
 	}
+}
+
+var hexParsed = regexp.MustCompile("#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})")
+
+// HexToColor converts a hexadecimal string of the form "#ffffff" to a
+// color.Color.
+func HexToColor(hex string) (color.Color, error) {
+	m := hexParsed.FindStringSubmatch(hex)
+	if len(m) != 4 {
+		return color.Black, fmt.Errorf("invalid hex color %q", hex)
+	}
+	r, err := strconv.ParseUint(m[1], 16, 8)
+	if err != nil {
+		return color.Black, fmt.Errorf("failed parsing %q as hex: %s", m[1], err)
+	}
+	g, err := strconv.ParseUint(m[2], 16, 8)
+	if err != nil {
+		return color.Black, fmt.Errorf("failed parsing %q as hex: %s", m[2], err)
+	}
+	b, err := strconv.ParseUint(m[3], 16, 8)
+	if err != nil {
+		return color.Black, fmt.Errorf("failed parsing %q as hex: %s", m[3], err)
+	}
+	return color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 255}, nil
+}
+
+// InvertColor returns an inverted version of the given Color.
+func InvertColor(c color.Color) color.Color {
+	r, g, b, a := c.RGBA()
+	inv := color.RGBA{
+		R: uint8(math.MaxUint8 - (r >> 8)),
+		G: uint8(math.MaxUint8 - (g >> 8)),
+		B: uint8(math.MaxUint8 - (b >> 8)),
+		A: uint8(a >> 8),
+	}
+	return inv
+}
+
+func InvertPalette(p color.Palette) color.Palette {
+	rv := make([]color.Color, 0, len(p))
+	for _, c := range p {
+		rv = append(rv, InvertColor(c))
+	}
+	return rv
 }
