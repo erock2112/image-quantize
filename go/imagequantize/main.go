@@ -44,6 +44,12 @@ func main() {
 	if err := writePaletteToFile(srcPalette, filepath.Join(*dir, "palette.jpg")); err != nil {
 		panic(err)
 	}
+	srcSorted := make([]color.Color, len(srcPalette))
+	copy(srcSorted, srcPalette)
+	palette.SortByLuminosity(srcSorted)
+	if err := writePaletteToFile(srcSorted, filepath.Join(*dir, "palette_sorted.jpg")); err != nil {
+		panic(err)
+	}
 
 	// Apply the palette to the image.
 	dstImage := image.NewPaletted(bounds.Bounds(), srcPalette)
@@ -52,31 +58,57 @@ func main() {
 		panic(err)
 	}
 
-	// Apply a palette mapping.
+	// Create a new palette.
 	newPalette := palette.Monochrome(color.RGBA{R: 34, G: 69, B: 158, A: 255}, *numColors)
 	//newPalette := palette.Subdivide(3)
+	palette.SortByLuminosity(newPalette)
 	if err := writePaletteToFile(newPalette, filepath.Join(*dir, "new_palette.jpg")); err != nil {
 		panic(err)
 	}
 
 	// Map the old palette onto the new.
-	mapping, err := palette.MapNearestBruteForce(srcPalette, newPalette)
-	if err != nil {
-		panic(err)
+	{
+		fmt.Printf("Before: %v\n", srcSorted)
+		//_, err := palette.MapByLuminosity(srcPalette, newPalette)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//palette.SortByLuminosity(srcPalette)
+		fmt.Printf("After:  %v\n", srcSorted)
+		/*
+			fmt.Println("Mapping:")
+			for k, v := range mapping {
+				fmt.Printf("  %v -> %v\n", k, v)
+			} /*
+				dstImageNonSorted, err := mapping.Apply(dstImage)
+				if err != nil {
+					panic(err)
+				}
+				if err := writeJPEG(filepath.Join(*dir, "luminosity_nonpresorted.jpg"), dstImageNonSorted); err != nil {
+					panic(err)
+				}*/
 	}
-	fmt.Println("Mapping:")
-	for k, v := range mapping {
-		fmt.Printf("  %v -> %v\n", k, v)
-	}
-	dstImage, err = mapping.Apply(dstImage)
-	if err != nil {
-		panic(err)
+
+	{
+		mappingSorted, err := palette.MapByLuminosity(srcSorted, newPalette)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("Mapping (pre-sorted):")
+		for k, v := range mappingSorted {
+			fmt.Printf("  %v -> %v\n", k, v)
+		}
+		dstImagePreSorted, err := mappingSorted.Apply(dstImage)
+		if err != nil {
+			panic(err)
+		}
+		if err := writeJPEG(filepath.Join(*dir, "luminosity_presorted.jpg"), dstImagePreSorted); err != nil {
+			panic(err)
+		}
 	}
 
 	// Write out the new image.
-	if err := writeJPEG(filepath.Join(*dir, "bruteforce_mapping.jpg"), dstImage); err != nil {
-		panic(err)
-	}
+
 }
 
 func writePaletteToFile(palette color.Palette, path string) error {

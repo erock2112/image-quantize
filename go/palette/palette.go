@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"sort"
 
 	"github.com/erock2112/kmeans/go/kmeans"
 )
@@ -143,6 +144,10 @@ func (m Map) Apply(src *image.Paletted) (*image.Paletted, error) {
 	for _, c := range m {
 		palette = append(palette, c)
 	}
+	fmt.Printf("Creating new image from palette mapping:\n")
+	for k, v := range m {
+		fmt.Printf("  %v -> %v\n", k, v)
+	}
 	rv := image.NewPaletted(bounds.Bounds(), palette)
 	for x := bounds.Min.X; x < bounds.Max.X; x++ {
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
@@ -171,7 +176,7 @@ func (m Map) ComputeError() int64 {
 // pairs in src and dst.
 func MapNearestGreedy(src, dst color.Palette) (Map, error) {
 	if len(dst) < len(src) {
-		return nil, fmt.Errorf("src palette has fewer colors than the dst, %d vs %d", len(dst), len(src))
+		return nil, fmt.Errorf("dst palette has fewer colors than the src, %d vs %d", len(dst), len(src))
 	}
 
 	origMap := make(map[color.Color]bool, len(src))
@@ -214,7 +219,7 @@ func MapNearestGreedy(src, dst color.Palette) (Map, error) {
 // sizes.
 func MapNearestBruteForce(src, dst color.Palette) (Map, error) {
 	if len(dst) < len(src) {
-		return nil, fmt.Errorf("src palette has fewer colors than the dst, %d vs %d", len(dst), len(src))
+		return nil, fmt.Errorf("dst palette has fewer colors than the src, %d vs %d", len(dst), len(src))
 	}
 
 	bestError := int64(-1)
@@ -240,6 +245,97 @@ func MapNearestBruteForce(src, dst color.Palette) (Map, error) {
 	}
 
 	return bestMap, nil
+}
+
+// SortByLuminosity sorts the Palette by luminosity.
+func SortByLuminosity(p color.Palette) {
+	sort.Stable(ColorPaletteByLuminosity(p))
+}
+
+type ColorPaletteByLuminosity []color.Color
+
+func (p ColorPaletteByLuminosity) Len() int {
+	return len(p)
+}
+
+func (p ColorPaletteByLuminosity) Less(i, j int) bool {
+	// This is inefficient because we're recomputing the luminosity O(n lg(n))
+	// times, but palettes shouldn't be too big anyway.
+	return Luminosity(p[i]) < Luminosity(p[j])
+}
+
+func (p ColorPaletteByLuminosity) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
+// MapByLuminosity maps the source palette to the destination by first finding
+// the luminosity of each color and sorting. The source and destination palettes
+// should be the same size.
+func MapByLuminosity(src, dst color.Palette) (Map, error) {
+	if len(src) != len(dst) {
+		return nil, fmt.Errorf("src and dst palettes should be the same size, %d vs %d", len(dst), len(src))
+	}
+	/*fmt.Println("src (before):")
+	for _, c := range src {
+		fmt.Printf("  Lum(%+v): %d\n", c, Luminosity(c))
+	}*/
+	SortByLuminosity(src)
+	/*fmt.Println("src (after):")
+	for _, c := range src {
+		fmt.Printf("  Lum(%+v): %d\n", c, Luminosity(c))
+	}*/
+	SortByLuminosity(dst)
+	/*fmt.Println("dst:")
+	for _, c := range dst {
+		fmt.Printf("  Lum(%+v): %d\n", c, Luminosity(c))
+	}*/
+	rv := make(map[color.Color]color.Color, len(src))
+	for idx, srcColor := range src {
+		rv[srcColor] = dst[idx]
+	}
+	return rv, nil
+
+	/*
+		srcMap := make(map[int][]color.Color, len(src))
+		srcLuminosities := make([]int, 0, len(src))
+		for _, c := range src {
+			l := int(Luminosity(c))
+			srcMap[l] = append(srcMap[l], c)
+			srcLuminosities = append(srcLuminosities, l)
+		}
+		sort.Ints(srcLuminosities)
+		srcSorted := make([]color.Color, 0, len(srcLuminosities))
+		for _, l := range srcLuminosities {
+			colors, ok := srcMap[l]
+			if ok {
+				srcSorted = append(srcSorted, colors...)
+				delete(srcMap, l)
+			}
+		}
+
+		dstMap := make(map[int][]color.Color, len(dst))
+		dstLuminosities := make([]int, 0, len(dst))
+		for _, c := range dst {
+			l := int(Luminosity(c))
+			dstMap[l] = append(dstMap[l], c)
+			dstLuminosities = append(dstLuminosities, l)
+		}
+		sort.Ints(dstLuminosities)
+		dstSorted := make([]color.Color, 0, len(dstLuminosities))
+		for _, l := range dstLuminosities {
+			colors, ok := dstMap[l]
+			if ok {
+				dstSorted = append(dstSorted, colors...)
+				delete(dstMap, l)
+			}
+		}
+
+		rv := make(map[color.Color]color.Color, len(srcSorted))
+		for idx, srcColor := range srcSorted {
+			rv[srcColor] = dstSorted[idx]
+		}
+		return rv, nil
+	*/
 }
 
 // NChooseK returns all combinations of choosing k elements from a set of size
@@ -297,4 +393,21 @@ func Permute(n int) [][]int {
 	}
 	helper(n)
 	return rv
+}
+
+// Luminosity returns the perceptual luminosity of the Color.
+func Luminosity(c color.Color) uint8 {
+	r, g, b, _ := c.RGBA()
+	return uint8(uint16(0.3*float32(r)+0.59*float32(g)+0.11*float32(b)) >> 8)
+}
+
+// Greyscale converts the Color to greyscale.
+func Greyscale(c color.Color) color.Color {
+	l := Luminosity(c)
+	return color.RGBA{
+		R: l,
+		G: l,
+		B: l,
+		A: math.MaxUint8,
+	}
 }
