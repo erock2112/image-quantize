@@ -67,7 +67,7 @@ func findClosestCentroids(data []Point, centroids []Point) []int {
 // findClosestCentroid returns the index of the centroid nearest to the given
 // Point.
 func findClosestCentroid(point Point, centroids []Point) int {
-	minDist := -1
+	minDist := int64(-1)
 	closestIdx := 0
 	for idx, centroid := range centroids {
 		dist := point.SqDist(centroid)
@@ -117,10 +117,10 @@ func (p Point) Divide(scalar int) {
 }
 
 // SqDist returns the squared Euclidean distance between the two points.
-func (p Point) SqDist(other Point) int {
-	rv := 0
+func (p Point) SqDist(other Point) int64 {
+	rv := int64(0)
 	for idx := range p {
-		sub := other[idx] - p[idx]
+		sub := int64(other[idx] - p[idx])
 		rv += sub * sub
 	}
 	return rv

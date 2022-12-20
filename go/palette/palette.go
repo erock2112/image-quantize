@@ -157,6 +157,16 @@ func (m Map) Apply(src *image.Paletted) (*image.Paletted, error) {
 	return rv, nil
 }
 
+// ComputeError returns the total error (squared Euclidean distance between
+// source and destination colors) of the map.
+func (m Map) ComputeError() int64 {
+	total := int64(0)
+	for src, dst := range m {
+		total += ColorToPoint(src).SqDist(ColorToPoint(dst))
+	}
+	return total
+}
+
 // MapNearestGreedy creates a Map by iteratively choosing the nearest color
 // pairs in src and dst.
 func MapNearestGreedy(src, dst color.Palette) (Map, error) {
@@ -175,7 +185,7 @@ func MapNearestGreedy(src, dst color.Palette) (Map, error) {
 
 	rv := make(map[color.Color]color.Color, len(src))
 	for {
-		minDist := -1
+		minDist := int64(-1)
 		var chosenOrig color.Color
 		var chosenNew color.Color
 		for origColor := range origMap {
@@ -200,19 +210,45 @@ func MapNearestGreedy(src, dst color.Palette) (Map, error) {
 
 // MapNearestBruteForce creates a Map by choosing all combinations of src and
 // dst color pairs and returning the one with the least total error. Will be
-// extremely slow for large palettes.
+// extremely slow for large palettes, particularly if src and dst have different
+// sizes.
 func MapNearestBruteForce(src, dst color.Palette) (Map, error) {
 	if len(dst) < len(src) {
 		return nil, fmt.Errorf("src palette has fewer colors than the dst, %d vs %d", len(dst), len(src))
 	}
 
-	return nil, nil
+	bestError := int64(-1)
+	var bestMap Map
+
+	// Choose subsets of the destination palette.
+	for _, subsetIndexes := range NChooseK(len(dst), len(src)) {
+		// Map every permutation of source colors to destination colors.
+		for _, permuteIndexes := range Permute(len(src)) {
+			if len(subsetIndexes) != len(permuteIndexes) {
+				return nil, fmt.Errorf("internal error; got mismatched number of subset indexes %v and permutation indexes %v", subsetIndexes, permuteIndexes)
+			}
+			var m Map = make(map[color.Color]color.Color, len(src))
+			for i := 0; i < len(permuteIndexes); i++ {
+				m[src[permuteIndexes[i]]] = dst[subsetIndexes[i]]
+			}
+			totalError := m.ComputeError()
+			if bestError < 0 || totalError < bestError {
+				bestError = totalError
+				bestMap = m
+			}
+		}
+	}
+
+	return bestMap, nil
 }
 
 // NChooseK returns all combinations of choosing k elements from a set of size
 // n. The return value can be used as indexes into arrays or slices.
 // TODO: This belongs in a math package of some kind.
 func NChooseK(n, k int) [][]int {
+	if n == 0 || k == 0 || k > n {
+		return nil
+	}
 	var rv [][]int
 	scratch := make([]int, k)
 	var nChooseKHelper func(remaining, start int)

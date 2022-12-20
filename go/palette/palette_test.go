@@ -12,6 +12,13 @@ func TestNChooseK(t *testing.T) {
 		require.Equal(t, expect, actual, "NChooseK(%d, %d)", n, k)
 	}
 
+	check(0, 0, nil)
+	check(0, 1, nil)
+	check(1, 0, nil)
+	check(1, 1, [][]int{
+		{0},
+	})
+	check(1, 2, nil)
 	check(2, 1, [][]int{
 		{0},
 		{1},
@@ -19,6 +26,7 @@ func TestNChooseK(t *testing.T) {
 	check(2, 2, [][]int{
 		{0, 1},
 	})
+	check(2, 3, nil)
 	check(3, 1, [][]int{
 		{0},
 		{1},

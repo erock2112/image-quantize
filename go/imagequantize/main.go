@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// Map the old palette onto the new.
-	mapping, err := palette.MapNearestGreedy(srcPalette, newPalette)
+	mapping, err := palette.MapNearestBruteForce(srcPalette, newPalette)
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +74,7 @@ func main() {
 	}
 
 	// Write out the new image.
-	if err := writeJPEG(filepath.Join(*dir, "greedy_mapping.jpg"), dstImage); err != nil {
+	if err := writeJPEG(filepath.Join(*dir, "bruteforce_mapping.jpg"), dstImage); err != nil {
 		panic(err)
 	}
 }
