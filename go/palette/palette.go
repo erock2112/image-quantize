@@ -129,7 +129,9 @@ func FromImage(img image.Image, numColors, maxKMeansIterations int) color.Palett
 	return palette
 }
 
-// Map describes a mapping from one color.Palette to another.
+// Map describes a mapping from one color.Palette to another. This helps to
+// avoid multiple source colors "collapsing" onto a single destination color,
+// which is relevant when using palettes of limited size.
 type Map map[color.Color]color.Color
 
 // Apply returns a new image.Paletted with the palette mapping applied to the
@@ -194,4 +196,38 @@ func MapNearestGreedy(src, dst color.Palette) (Map, error) {
 		}
 	}
 	return rv, nil
+}
+
+// MapNearestBruteForce creates a Map by choosing all combinations of src and
+// dst color pairs and returning the one with the least total error. Will be
+// extremely slow for large palettes.
+func MapNearestBruteForce(src, dst color.Palette) (Map, error) {
+	if len(dst) < len(src) {
+		return nil, fmt.Errorf("src palette has fewer colors than the dst, %d vs %d", len(dst), len(src))
+	}
+	// TODO
+	return nil, nil
+}
+
+// NChooseK returns all combinations of choosing k elements from a set of size
+// n. The return value can be used as indexes into arrays or slices.
+// TODO: This belongs in a math package of some kind.
+func NChooseK(n, k int) [][]int {
+	rv := [][]int{}
+	scratch := make([]int, k)
+	var nChooseKHelper func(remaining, start int)
+	nChooseKHelper = func(remaining, start int) {
+		if remaining == 0 {
+			cp := make([]int, k)
+			copy(cp, scratch)
+			rv = append(rv, cp)
+			return
+		}
+		for i := start; i <= n-remaining; i++ {
+			scratch[k-remaining] = i
+			nChooseKHelper(remaining-1, i+1)
+		}
+	}
+	nChooseKHelper(k, 0)
+	return rv
 }
