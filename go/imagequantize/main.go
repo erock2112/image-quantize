@@ -9,86 +9,70 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"os"
+	"path/filepath"
 
 	"github.com/erock2112/kmeans/go/kmeans"
+	"github.com/erock2112/kmeans/go/palette"
 )
 
 const maxKMeansIterations = 1000
 
 func main() {
 	// Setup.
-	srcPath := flag.String("src", "", "Source image path.")
-	dstPath := flag.String("dst", "", "Destination image path.")
-	palettePath := flag.String("palette", "", "If provided, write the color palette to this path.")
+	dir := flag.String("dir", "", "Directory containing images. Expect 'src.jpg' to be present.")
 	numColors := flag.Int("colors", 0, "Number of colors to use in the palette.")
 	flag.Parse()
-	if *srcPath == "" {
-		panic("--src is required.")
-	}
-	if *dstPath == "" {
-		panic("--dst is required.")
+	palettizedPath := filepath.Join(*dir, "palettized.jpg")
+	if *dir == "" {
+		panic("--dir is required.")
 	}
 	if *numColors == 0 {
 		panic("--colors is required.")
 	}
 
 	// Read the image.
-	srcImage, err := readImage(*srcPath)
+	srcPath := filepath.Join(*dir, "src.jpg") // TODO: No hard-code.
+	srcImage, err := readImage(srcPath)
 	if err != nil {
 		panic(err)
 	}
 	bounds := srcImage.Bounds()
 
-	// Create the color palette.
-	palette := colorPaletteFromImage(srcImage, *numColors)
+	// Create the color srcPalette.
+	srcPalette := colorPaletteFromImage(srcImage, *numColors)
 
-	// Write the palette itself to a file if requested.
-	if *palettePath != "" {
-		const palettePixels = 50
-		paletteImage := image.NewRGBA(image.Rect(0, 0, palettePixels, palettePixels*len(palette)))
-		for idx, color := range palette {
-			yOffset := idx * palettePixels
-			for x := 0; x < palettePixels; x++ {
-				for y := yOffset; y < yOffset+palettePixels; y++ {
-					paletteImage.Set(x, y, color)
-				}
-			}
-		}
-		if err := writeJPEG(*palettePath, paletteImage); err != nil {
-			panic(err)
-		}
+	// Write the palette itself to a file.
+	if err := writePaletteToFile(srcPalette, filepath.Join(*dir, "palette.jpg")); err != nil {
+		panic(err)
 	}
 
 	// Apply the palette to the image.
-	dstImage := image.NewPaletted(bounds.Bounds(), palette)
+	dstImage := image.NewPaletted(bounds.Bounds(), srcPalette)
 	draw.Draw(dstImage, dstImage.Rect, srcImage, bounds.Min, draw.Over)
+	if err := writeJPEG(palettizedPath, dstImage); err != nil {
+		panic(err)
+	}
 
 	// Apply a palette mapping.
-	newPalette := []color.Color{}
-	const colorDiv = 2
-	for r := 0; r <= colorDiv; r++ {
-		rVal := r * 255 / colorDiv
-		for g := 0; g <= colorDiv; g++ {
-			gVal := g * 255 / colorDiv
-			for b := 0; b <= colorDiv; b++ {
-				bVal := b * 255 / colorDiv
-				newPalette = append(newPalette, color.RGBA{
-					R: uint8(rVal),
-					G: uint8(gVal),
-					B: uint8(bVal),
-					A: 255,
-				})
-			}
-		}
+	newPalette := palette.Monochrome(color.RGBA{R: 34, G: 69, B: 158, A: 255}, *numColors)
+	//newPalette := palette.Subdivide(3)
+	if err := writePaletteToFile(newPalette, filepath.Join(*dir, "new_palette.jpg")); err != nil {
+		panic(err)
 	}
-	mapping, err := mapNearestGreedy(palette, newPalette)
+
+	// Map the old palette onto the new.
+	mapping, err := mapNearestGreedy(srcPalette, newPalette)
 	if err != nil {
 		panic(err)
+	}
+	fmt.Println("Mapping:")
+	for k, v := range mapping {
+		fmt.Printf("  %v -> %v\n", k, v)
 	}
 	dstImage = applyPaletteMap(dstImage, mapping)
 
 	// Write out the new image.
-	if err := writeJPEG(*dstPath, dstImage); err != nil {
+	if err := writeJPEG(filepath.Join(*dir, "with_new_palette.jpg"), dstImage); err != nil {
 		panic(err)
 	}
 }
@@ -101,7 +85,7 @@ func colorPaletteFromImage(img image.Image, numColors int) color.Palette {
 	data := make([]kmeans.Point, 0, bounds.Dx()*bounds.Dy())
 	for x := bounds.Min.X; x < bounds.Max.X; x++ {
 		for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-			data = append(data, ColorToPoint(img.At(x, y)))
+			data = append(data, palette.ColorToPoint(img.At(x, y)))
 		}
 	}
 
@@ -120,6 +104,20 @@ func colorPaletteFromImage(img image.Image, numColors int) color.Palette {
 		})
 	}
 	return palette
+}
+
+func writePaletteToFile(palette color.Palette, path string) error {
+	const palettePixels = 50
+	paletteImage := image.NewRGBA(image.Rect(0, 0, palettePixels, palettePixels*len(palette)))
+	for idx, color := range palette {
+		yOffset := idx * palettePixels
+		for x := 0; x < palettePixels; x++ {
+			for y := yOffset; y < yOffset+palettePixels; y++ {
+				paletteImage.Set(x, y, color)
+			}
+		}
+	}
+	return writeJPEG(path, paletteImage)
 }
 
 // writeJPEG is a convenience function for writing a JPEG image.
@@ -155,11 +153,6 @@ func readImage(path string) (image.Image, error) {
 	return img, nil
 }
 
-func ColorToPoint(c color.Color) kmeans.Point {
-	r, g, b, _ := c.RGBA()
-	return kmeans.Point{int(r), int(g), int(b)}
-}
-
 func mapNearestGreedy(oldPalette, newPalette color.Palette) (map[color.Color]color.Color, error) {
 	if len(newPalette) < len(oldPalette) {
 		return nil, fmt.Errorf("new palette has fewer colors than the old, %d vs %d", len(newPalette), len(oldPalette))
@@ -181,7 +174,7 @@ func mapNearestGreedy(oldPalette, newPalette color.Palette) (map[color.Color]col
 		var chosenNew color.Color
 		for origColor := range origMap {
 			for newColor := range newMap {
-				dist := ColorToPoint(origColor).SqDist(ColorToPoint(newColor))
+				dist := palette.ColorToPoint(origColor).SqDist(palette.ColorToPoint(newColor))
 				if minDist < 0 || dist < minDist {
 					minDist = dist
 					chosenOrig = origColor
