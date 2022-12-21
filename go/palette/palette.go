@@ -30,44 +30,44 @@ func Monochrome(from color.Color, steps int) color.Palette {
 
 	palette := make([]color.Color, 0, steps)
 	srcR, srcG, srcB, _ := from.RGBA()
+	// Convert back to 8 bits per channel to keep from having to deal with both
+	// 8 and 16-bit values.
+	srcR = srcR >> 8
+	srcG = srcG >> 8
+	srcB = srcB >> 8
 
-	// We'll divide the space between black and white into the given number of
-	// steps, with the given color as the midpoint. Make sure that the side with
-	// more steps is the one covering the greater distance.
-	remainingSteps := uint32(steps) - 1
-	stepsLeft := uint32(remainingSteps / 2)
-	stepsRight := remainingSteps - stepsLeft
-	distLeft := ColorToPoint(color.Black).SqDist(ColorToPoint(from))
-	distRight := ColorToPoint(color.White).SqDist(ColorToPoint(from))
-	if stepsLeft > stepsRight && distLeft < distRight {
-		stepsLeft, stepsRight = stepsRight, stepsLeft
-	}
+	baseLuminosity := float32(Luminosity(from))
+	ratioLeftR := float32(srcR) / baseLuminosity
+	ratioLeftG := float32(srcG) / baseLuminosity
+	ratioLeftB := float32(srcB) / baseLuminosity
+	rightLuminositySpan := float32(math.MaxUint8 - baseLuminosity)
+	ratioRightR := float32(math.MaxUint8-srcR) / rightLuminositySpan
+	ratioRightG := float32(math.MaxUint8-srcG) / rightLuminositySpan
+	ratioRightB := float32(math.MaxUint8-srcB) / rightLuminositySpan
+	scale := float32(math.MaxUint8) / float32(steps-1)
 
-	scaleLeftR := srcR / stepsLeft
-	scaleLeftG := srcG / stepsLeft
-	scaleLeftB := srcB / stepsLeft
-	for i := uint32(0); i < stepsLeft; i++ {
+	for i := 0; i < steps; i++ {
+		luminosity := float32(i) * scale
+		var r, g, b uint32
+		if luminosity < baseLuminosity {
+			r = uint32(luminosity * ratioLeftR)
+			g = uint32(luminosity * ratioLeftG)
+			b = uint32(luminosity * ratioLeftB)
+		} else {
+			luminosityAdj := luminosity - baseLuminosity
+			r = srcR + uint32(luminosityAdj*ratioRightR)
+			g = srcG + uint32(luminosityAdj*ratioRightG)
+			b = srcB + uint32(luminosityAdj*ratioRightB)
+		}
 		c := color.RGBA{
-			R: uint8((i * scaleLeftR) >> 8),
-			G: uint8((i * scaleLeftG) >> 8),
-			B: uint8((i * scaleLeftB) >> 8),
+			R: uint8(r),
+			G: uint8(g),
+			B: uint8(b),
 			A: math.MaxUint8,
 		}
 		palette = append(palette, c)
 	}
 
-	scaleRightR := (math.MaxUint16 - srcR) / stepsRight
-	scaleRightG := (math.MaxUint16 - srcG) / stepsRight
-	scaleRightB := (math.MaxUint16 - srcB) / stepsRight
-	for i := uint32(0); i <= stepsRight; i++ {
-		c := color.RGBA{
-			R: uint8((srcR + i*scaleRightR) >> 8),
-			G: uint8((srcG + i*scaleRightG) >> 8),
-			B: uint8((srcB + i*scaleRightB) >> 8),
-			A: math.MaxUint8,
-		}
-		palette = append(palette, c)
-	}
 	return palette
 }
 
