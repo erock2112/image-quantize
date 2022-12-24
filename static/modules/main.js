@@ -1,9 +1,10 @@
-import {applyPalette, drawPalette, fromImageData} from "./palette.js";
+import {Image} from "./types.js";
+import {quantize} from "./quantize.js";
 
 class App{
     constructor() {
-        this._numColors = 8;
-        this._imageData = null;
+        this._numColors = 4;
+        this._image = null;
     }
 
     get numColors() {
@@ -14,34 +15,36 @@ class App{
         this.render();
     }
 
-    get imageData() {
-        return this._imageData;
+    get image() {
+        return this._image;
     }
-    set imageData(imageData) {
-        this._imageData = imageData;
+    set image(image) {
+        this._image = image;
         this.render();
     }
 
     render() {
-        imageDataToCanvas("src-image", this.imageData);
+        if (!this._image) {
+            return;
+        }
 
-        // Quantize the image.
+        // Draw the original image to a canvas.
+        imageDataToCanvas("src-image", this.image);
+
+        // Quantize the image and draw both the generated palette and the
+        // quantized image to canvases.
         console.log("computing quantized palette");
-        const numColors = document.getElementById("size-input").value;
-        const quantizedPalette = fromImageData(this.imageData, this.numColors, 1000);
-        const quantizedPaletteImage = drawPalette(quantizedPalette);
+        const quantizedPalette = quantize(this.image, this.numColors, 1000);
+        const quantizedPaletteImage = quantizedPalette.makeImage(50);
         imageDataToCanvas("src-palette", quantizedPaletteImage);
-        const quantizedImageData = applyPalette(this.imageData, quantizedPalette);
+        const quantizedImageData = quantizedPalette.apply(this.image);
         imageDataToCanvas("quantized-image", quantizedImageData);
     }
 }
 
-function imageDataToCanvas(canvasId, imageData) {
+function imageDataToCanvas(canvasId, image) {
     var canvas = document.getElementById(canvasId);
-    canvas.width = imageData.width;
-    canvas.height = imageData.height;
-    var ctx = canvas.getContext("2d");
-    ctx.putImageData(imageData, 0, 0);
+    image.draw(canvas);
 }
 
 function init() {
@@ -53,11 +56,12 @@ function init() {
         canvas.height = bmp.height;
         var ctx = canvas.getContext("2d");
         ctx.drawImage(bmp, 0, 0);
-        app.imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        app.image = new Image(ctx.getImageData(0, 0, canvas.width, canvas.height));
     });
     document.getElementById("size-input").onchange = (event) => {
         app.numColors = event.target.value;
     };
+    document.getElementById("size-input").value = app.numColors;
 }
 
 const app = new App();
