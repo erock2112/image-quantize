@@ -5,9 +5,14 @@
     <script type="module" src="/modules/main.js"></script>
   </head>
   <body>
-    <input id="file-input" type="file" accept="image/*"><br>
-    <canvas id="src-image"></canvas>
-    <canvas id="src-palette"></canvas>
-    <canvas id="quantized-image"></canvas>
+    <div>
+      Palette size: <input id="size-input" type="number" value="8"></input>
+      <input id="file-input" type="file" accept="image/*">
+    </div>
+    <div>
+      <canvas id="src-image"></canvas>
+      <canvas id="src-palette"></canvas>
+      <canvas id="quantized-image"></canvas>
+    </div>
   </body>
 </html>

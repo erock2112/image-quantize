@@ -2,7 +2,6 @@
 export function kmeans(data, k, maxIterations) {
     // Validate the input data.
     let dimensions = -1;
-    console.log(data);
     data.forEach((pt) => {
         if (dimensions == -1) {
             dimensions = pt.length;
@@ -21,7 +20,6 @@ export function kmeans(data, k, maxIterations) {
 
     // Iterate until we converge on the optimal set of centroids.
     for (let i = 0; i < maxIterations; i++) {
-        console.log(centroids);
         console.log("iteration " + i);
         const oldCentroids = centroids;
         const nearestCentroids = data.map((pt) => findClosestCentroid(pt, centroids));
