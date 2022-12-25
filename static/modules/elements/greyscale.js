@@ -1,13 +1,14 @@
 import {html} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
-import {TransformerEb} from "./transformer.js";
+import {TransformerEb, ImageInput, ImageOutput} from "./transformer.js";
 
 export class GreyscaleEb extends TransformerEb {
     constructor() {
-        super("Greyscale");
+        super("Greyscale", [new ImageInput("image")], [new ImageOutput("image")], GreyscaleEb.process);
     }
 
-    process(image) {
-        return image.map((color) => color.greyscale());
+    static process(image) {
+        console.log("process greyscale");
+        return [image.map((color) => color.greyscale())];
     }
 
     render() {

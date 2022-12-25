@@ -5,6 +5,7 @@ import {Image} from "../types.js";
 import {QuantizeEb} from "./quantize.js";
 import {InvertEb} from "./invert.js";
 import {GreyscaleEb} from "./greyscale.js";
+import {PaletteToImageEb} from "./paletteToImage.js";
 import "./icons/delete.js";
 import "./icons/expand-more.js";
 import "./icons/expand-less.js";
@@ -72,7 +73,16 @@ export class TransformerListEb extends LitElement {
             ["Invert", InvertEb],
             ["Greyscale", GreyscaleEb],
         ];
-        this.transformers = [];
+
+        const qt = new QuantizeEb();
+        const gs = new GreyscaleEb();
+        const inv = new InvertEb();
+        const pi = new PaletteToImageEb();
+        qt.output("image").addSubscriber(gs.input("image"));
+        qt.output("palette").addSubscriber(pi.input("palette"));
+        gs.output("image").addSubscriber(inv.input("image"));
+
+        this.transformers = [qt, pi, gs, inv];
         this.srcImage = null;
         this.srcFileName = null;
         this.working = false;
@@ -145,9 +155,11 @@ export class TransformerListEb extends LitElement {
         this.render();
         setTimeout(() => {
             let image = this.srcImage;
-            this.transformers.forEach((tf) => {
-                image = tf.process(image);
-            });
+            this.transformers[0].input("image").update(image);
+            //this.transformers.forEach((tf) => {
+            //    image = tf.process(image);
+            //});
+            image = this.transformers[this.transformers.length-1].output("image").value;
             const dstImageCanvas = this.shadowRoot.getElementById("dst-image");
             image.draw(dstImageCanvas);
             this.working = false;
