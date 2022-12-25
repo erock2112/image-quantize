@@ -3,8 +3,9 @@ import {TransformerEb, ImageInput, ImageOutput, PaletteOutput} from "./transform
 import {quantize} from "../quantize.js";
 
 export class QuantizeEb extends TransformerEb {
-    constructor() {
-        super("Quantize", [new ImageInput("image")], [new ImageOutput("image"), new PaletteOutput("palette")], QuantizeEb.process);
+    constructor(parent) {
+        super(parent, "Quantize", [new ImageInput("image")], [new ImageOutput("image"), new PaletteOutput("palette")]);
+        this.processFn = QuantizeEb.process;
         this._numColors = 4;
     }
 
@@ -17,7 +18,6 @@ export class QuantizeEb extends TransformerEb {
     }
 
     static process(image) {
-        console.log("process quantize");
         const quantizedPalette = quantize(image, this.numColors, 200);
         return [quantizedPalette.apply(image), quantizedPalette];
     }

@@ -9,6 +9,8 @@ import {PaletteToImageEb} from "./paletteToImage.js";
 import "./icons/delete.js";
 import "./icons/expand-more.js";
 import "./icons/expand-less.js";
+import { RenderImageEb } from "./render-image.js";
+import { ReadImageEb } from "./read-image.js";
 
 export class TransformerListEb extends LitElement {
     static styles = css`
@@ -74,19 +76,24 @@ export class TransformerListEb extends LitElement {
             ["Greyscale", GreyscaleEb],
         ];
 
-        const qt = new QuantizeEb();
-        const gs = new GreyscaleEb();
-        const inv = new InvertEb();
-        const pi = new PaletteToImageEb();
+        const inp = new ReadImageEb(this);
+        const inpRender = new RenderImageEb(this);
+        const qt = new QuantizeEb(this);
+        const gs = new GreyscaleEb(this);
+        const inv = new InvertEb(this);
+        const pi = new PaletteToImageEb(this);
+        const ri = new RenderImageEb(this);
+        const rp = new RenderImageEb(this)
+        inp.output("image").addSubscriber(inpRender.input("image"));
+        inp.output("image").addSubscriber(qt.input("image"));
         qt.output("image").addSubscriber(gs.input("image"));
         qt.output("palette").addSubscriber(pi.input("palette"));
         gs.output("image").addSubscriber(inv.input("image"));
+        inv.output("image").addSubscriber(ri.input("image"));
+        pi.output("image").addSubscriber(rp.input("image"));
 
-        this.transformers = [qt, pi, gs, inv];
-        this.srcImage = null;
-        this.srcFileName = null;
+        this.transformers = [inp, inpRender, qt, pi, rp, gs, inv, ri];
         this.working = false;
-        window.addEventListener("reprocess", this.process.bind(this));
     }
 
     add(typ) {
@@ -126,58 +133,15 @@ export class TransformerListEb extends LitElement {
         this.process();
     }
 
-    imageChanged(event) {
-        const file = event.target.files[0];
-        if (!file) {
-            return;
-        }
-        this.working = true;
-        createImageBitmap(file).then((bmp) => {
-            // Draw the image into the src-image canvas.
-            console.log("reading image");
-            var canvas = document.createElement("canvas");
-            canvas.width = bmp.width;
-            canvas.height = bmp.height;
-            var ctx = canvas.getContext("2d");
-            ctx.drawImage(bmp, 0, 0);
-            this.srcImage = new Image(ctx.getImageData(0, 0, canvas.width, canvas.height));
-            this.srcFileName = file.name;
-            this.process();
-        });
-        this.render();
-    }
-
-    process() {
-        if (!this.srcImage) {
-            return;
-        }
-        this.working = true;
-        this.render();
-        setTimeout(() => {
-            let image = this.srcImage;
-            this.transformers[0].input("image").update(image);
-            //this.transformers.forEach((tf) => {
-            //    image = tf.process(image);
-            //});
-            image = this.transformers[this.transformers.length-1].output("image").value;
-            const dstImageCanvas = this.shadowRoot.getElementById("dst-image");
-            image.draw(dstImageCanvas);
-            this.working = false;
-            this.render();
-        });
-    }
-
-    download() {
-        const dstImageCanvas = this.shadowRoot.getElementById("dst-image");
-        const a = document.createElement("a");
-        const splitName = this.srcFileName.split(".");
-        splitName[0] = splitName[0] + "-edited"
-        a.download = splitName.join(".");
-        a.href = dstImageCanvas.toDataURL();
-        a.click();
+    forceUpdate() {
+        console.log("update");
+        const newTransformers = [...this.transformers];
+        this.transformers = newTransformers;
+        //this.render();
     }
 
     render() {
+        console.log("render");
         return html`
         <div class="container">
             <div class="mainContainer">
@@ -187,7 +151,7 @@ export class TransformerListEb extends LitElement {
                         <div>${tf[0]}</div>
                         <div class="flex"></div>
                         <div>
-                        <button @click="${() => this.add(tf[1])}">+</button>
+                            <button @click="${() => this.add(tf[1])}">+</button>
                         </div>
                     </div>
                     `)}
@@ -199,30 +163,24 @@ export class TransformerListEb extends LitElement {
                         ${tf.render()}
                         <div class="flex"></div>
                         <div class="buttons">
-                        <div>
-                           <button @click="${() => this.up(index)}">
-                                <expand-less-icon-eb width=32 height=32></expand-less-icon-eb>
-                            </button>
-                        </div>
-                        <div>
-                            <button @click="${() => this.delete(index)}">
-                                <delete-icon-eb width=32 height=32></delete-icon-eb>
-                            </button>
-                        </div>
-                        <div>
-                            <button @click="${() => this.down(index)}">
-                                <expand-more-icon-eb width=32 height=32></expand-more-icon-eb>
-                            </button>
+                            <div>
+                                <button @click="${() => this.up(index)}">
+                                    <expand-less-icon-eb width=32 height=32></expand-less-icon-eb>
+                                </button>
+                            </div>
+                            <div>
+                                <button @click="${() => this.delete(index)}">
+                                    <delete-icon-eb width=32 height=32></delete-icon-eb>
+                                </button>
+                            </div>
+                            <div>
+                                <button @click="${() => this.down(index)}">
+                                    <expand-more-icon-eb width=32 height=32></expand-more-icon-eb>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     `)}
-                </div>
-                <div class="flex">
-                    <input id="file-input" type="file" accept="image/*" @change="${this.imageChanged}"></input>
-                    <button @click="${() => this.download()}">Download</button>
-                    <br/>
-                    <spinner-eb style="visibility:${this.working ? "visible" : "hidden"}"></spinner-eb>
-                    <canvas id="dst-image" style="visibility:${this.working ? "hidden" : "visible"}"></canvas>
                 </div>
             </div>
         </div>

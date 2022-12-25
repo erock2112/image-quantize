@@ -62,20 +62,16 @@ export class PaletteOutput extends Output {
 }
 
 export class TransformerEb extends LitElement {
-    constructor(name, inputs, outputs, process) {
+    constructor(parent, name, inputs, outputs) {
         super();
         this.name = name;
         inputs.forEach((input) => {input.processor = this});
         this.inputs = Object.fromEntries(inputs.map((input) => [input.name, input]));
         this.outputs = Object.fromEntries(outputs.map((output) => [output.name, output]));;
-        this.process = process;
+        this.processFn = null;
+        this._parent = parent;
+        this._busy = false;
     }
-
-    static properties = {
-        name: {type: String},
-        inputs: {type: Object},
-        outputs: {type: Object},
-    };
 
     input(name) {
         return this.inputs[name];
@@ -85,21 +81,35 @@ export class TransformerEb extends LitElement {
         return this.outputs[name];
     }
 
+    get busy() {
+        return this._busy;
+    }
+    set busy(busy) {
+        this._busy = busy;
+        this._parent.forceUpdate();
+    }
+
     update() {
-        console.log(this.inputs);
         const inputs = Object.values(this.inputs);
-        console.log(inputs);
         if (Object.values(this.inputs).some((input) => !input.value)) {
             return;
         }
-        const results = this.process(...inputs.map((inp) => inp.value));
-        const outputs = Object.values(this.outputs);
-        if (results.length != outputs.length) {
-            throw `Got incorrect number of results; ${results} vs ${outputs}`;
+        if (!this.processFn) {
+            return;
         }
-        Object.values(this.outputs).forEach((output, index) => {
-            output.update(results[index]);
-        });
+        console.log("process " + this.name);
+        this.busy = true;
+        setTimeout((() => {
+            const results = this.processFn(...inputs.map((inp) => inp.value));
+            this.busy = false;
+            const outputs = Object.values(this.outputs);
+            if (results.length != outputs.length) {
+                throw `Got incorrect number of results; ${results} vs ${outputs}`;
+            }
+            Object.values(this.outputs).forEach((output, index) => {
+                output.update(results[index]);
+            });
+        }).bind(this));
     }
 
     render() {

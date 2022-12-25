@@ -2,8 +2,9 @@ import {html} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js"
 import {TransformerEb, PaletteInput, ImageOutput} from "./transformer.js";
 
 export class PaletteToImageEb extends TransformerEb {
-    constructor() {
-        super("PaletteToImageEb", [new PaletteInput("palette")], [new ImageOutput("image")], PaletteToImageEb.process);
+    constructor(parent) {
+        super(parent, "Palette to Image", [new PaletteInput("palette")], [new ImageOutput("image")]);
+        this.processFn = PaletteToImageEb.process;
         this._pixels = 50;
     }
 
@@ -16,7 +17,6 @@ export class PaletteToImageEb extends TransformerEb {
     }
 
     static process(palette) {
-        console.log("process paletteToImage");
         return [palette.makeImage(this.pixels)];
     }
 
