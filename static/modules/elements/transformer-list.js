@@ -54,7 +54,7 @@ export class TransformerListEb extends LitElement {
         background-color: transparent;
         border: none;
     }
-    spinner-eb, #file-input {
+    spinner-eb {
         position: fixed;
     }
     `;
@@ -74,6 +74,7 @@ export class TransformerListEb extends LitElement {
         ];
         this.transformers = [];
         this.srcImage = null;
+        this.srcFileName = null;
         this.working = false;
         window.addEventListener("reprocess", this.process.bind(this));
     }
@@ -117,7 +118,8 @@ export class TransformerListEb extends LitElement {
 
     imageChanged(event) {
         this.working = true;
-        createImageBitmap(event.target.files[0]).then((bmp) => {
+        const file = event.target.files[0];
+        createImageBitmap(file).then((bmp) => {
             // Draw the image into the src-image canvas.
             console.log("reading image");
             var canvas = document.createElement("canvas");
@@ -126,6 +128,7 @@ export class TransformerListEb extends LitElement {
             var ctx = canvas.getContext("2d");
             ctx.drawImage(bmp, 0, 0);
             this.srcImage = new Image(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            this.srcFileName = file.name;
             this.process();
         });
         this.render();
@@ -147,6 +150,16 @@ export class TransformerListEb extends LitElement {
             this.working = false;
             this.render();
         });
+    }
+
+    download() {
+        const dstImageCanvas = this.shadowRoot.getElementById("dst-image");
+        const a = document.createElement("a");
+        const splitName = this.srcFileName.split(".");
+        splitName[0] = splitName[0] + "-edited"
+        a.download = splitName.join(".");
+        a.href = dstImageCanvas.toDataURL();
+        a.click();
     }
 
     render() {
@@ -190,9 +203,9 @@ export class TransformerListEb extends LitElement {
                     `)}
                 </div>
                 <div class="flex">
-                    ${!this.srcImage && !this.working ? html`
                     <input id="file-input" type="file" accept="image/*" @change="${this.imageChanged}"></input>
-                    ` : html``}
+                    <button @click="${() => this.download()}">Download</button>
+                    <br/>
                     <spinner-eb style="visibility:${this.working ? "visible" : "hidden"}"></spinner-eb>
                     <canvas id="dst-image" style="visibility:${this.working ? "hidden" : "visible"}"></canvas>
                 </div>
