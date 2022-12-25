@@ -26,8 +26,8 @@ export class TransformerListEb extends LitElement {
     div.options {
         display: flex;
         flex-direction: column;
-        border: 1px solid black;
-        padding: 10px;
+        background-color: #efefef;
+        padding: 20px;
     }
     div.listitem {
         display: flex;
@@ -35,10 +35,10 @@ export class TransformerListEb extends LitElement {
     }
     div.transformer {
         align-items: center;
-        border: 1px solid black;
+        background-color: #efefef;
         display: flex;
         flex-direction: row;
-        margin: 0px 10px 20px 10px;
+        margin: 10px;
     }
     div.transformer > div {
         padding: 10px;
@@ -53,7 +53,7 @@ export class TransformerListEb extends LitElement {
         background-color: transparent;
         border: none;
     }
-    spinner-eb {
+    spinner-eb, #file-input {
         position: fixed;
     }
     `;
@@ -150,9 +150,6 @@ export class TransformerListEb extends LitElement {
     render() {
         return html`
         <div class="container">
-            <div>
-               <input id="file-input" type="file" accept="image/*" @change="${this.imageChanged}"></input>
-            </div>
             <div class="mainContainer">
                 <div class="options">
                     ${this.allTransformers.map((tf) => html`
@@ -190,7 +187,10 @@ export class TransformerListEb extends LitElement {
                     </div>
                     `)}
                 </div>
-                <div>
+                <div class="flex">
+                    ${!this.srcImage && !this.working ? html`
+                    <input id="file-input" type="file" accept="image/*" @change="${this.imageChanged}"></input>
+                    ` : html``}
                     <spinner-eb style="visibility:${this.working ? "visible" : "hidden"}"></spinner-eb>
                     <canvas id="dst-image" style="visibility:${this.working ? "hidden" : "visible"}"></canvas>
                 </div>
