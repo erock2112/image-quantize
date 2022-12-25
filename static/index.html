@@ -2,19 +2,9 @@
 <html>
   <head>
     <title>Image Quantizer</title>
-    <script type="module" src="/modules/main.js"></script>
     <script type="module" src="/modules/elements/transformer-list.js"></script>
   </head>
   <body>
-    <div>
-      Palette size: <input id="size-input" type="number"></input>
-      <input id="file-input" type="file" accept="image/*">
-    </div>
-    <div>
-      <canvas id="src-image"></canvas>
-      <canvas id="src-palette"></canvas>
-      <canvas id="quantized-image"></canvas>
-    </div>
     <div>
       <transformer-list-eb name="Quantizer"></transformer-list-eb>
     </div>

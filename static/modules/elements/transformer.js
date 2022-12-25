@@ -1,38 +1,22 @@
-import {css, html, LitElement} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
-import "./icons/delete.js";
-import "./icons/expand-less.js";
-import "./icons/expand-more.js";
+import {LitElement} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
 
 export class TransformerEb extends LitElement {
-    constructor(numColors) {
+    constructor(name) {
         super();
-        this.name = "Quantize";
-        this._numColors = numColors || 4;
-    }
-
-    get numColors() {
-        return this._numColors;
-    }
-    set numColors(numColors) {
-        console.log("Set numColors "+numColors);
-        this._numColors = numColors;
+        this.name = name;
+        this._numColors = 4;
     }
 
     static properties = {
         name: {type: String},
     };
 
-    transform(image) {
-        const quantizedPalette = quantize(image, this.numColors, 200);
-        return quantizedPalette.apply(image);
+    process(_) {
+        throw "process() not implemented by base TransformerEb";
     }
 
     render() {
-        return html`
-          <div>
-            Colors: <input id="size-input" type="number" value=${this.numColors} @change="${(e) => this.numColors = e.target.value}"></input>
-          </div>
-        `
+        throw "render() not implemented by base TransformerEb";
     }
 }
 customElements.define('transformer-eb', TransformerEb);

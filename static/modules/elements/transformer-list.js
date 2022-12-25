@@ -1,6 +1,11 @@
 import {css, html, LitElement} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
 import "./transformer.js";
-import { TransformerEb } from "./transformer.js";
+import {Image} from "../types.js";
+import {QuantizeEb} from "./quantize.js";
+import {InvertEb} from "./invert.js";
+import "./icons/delete.js";
+import "./icons/expand-more.js";
+import "./icons/expand-less.js";
 
 export class TransformerListEb extends LitElement {
     static styles = css`
@@ -41,10 +46,6 @@ export class TransformerListEb extends LitElement {
         background-color: transparent;
         border: none;
     }
-    input {
-        text-align: right;
-        width: 35px;
-    }
     `;
 
     static properties = {
@@ -55,16 +56,18 @@ export class TransformerListEb extends LitElement {
     constructor() {
         super();
         this.allTransformers = [
-            ["Quantize", TransformerEb],
-            ["Invert", TransformerEb],
+            ["Quantize", QuantizeEb],
+            ["Invert", InvertEb],
         ];
         this.transformers = [];
+        this.srcImage = null;
     }
 
     add(typ) {
         const newTransformers = [...this.transformers];
         this.transformers = newTransformers;
         newTransformers.push(new typ());
+        this.process();
     }
 
     up(index) {
@@ -75,6 +78,7 @@ export class TransformerListEb extends LitElement {
         this.transformers = newTransformers;
         this.transformers.splice(index - 1, 0, this.transformers.splice(index, 1)[0]);
         this.render();
+        this.process();
     }
 
     down(index) {
@@ -85,6 +89,7 @@ export class TransformerListEb extends LitElement {
         this.transformers = newTransformers;
         this.transformers.splice(index + 1, 0, this.transformers.splice(index, 1)[0]);
         this.render();
+        this.process();
     }
 
     delete(index) {
@@ -92,10 +97,42 @@ export class TransformerListEb extends LitElement {
         this.transformers = newTransformers;
         this.transformers.splice(index, 1);
         this.render();
+        this.process();
+    }
+
+    imageChanged(event) {
+        createImageBitmap(event.target.files[0]).then((bmp) => {
+            // Draw the image into the src-image canvas.
+            console.log("reading image");
+            var canvas = document.createElement("canvas");
+            canvas.width = bmp.width;
+            canvas.height = bmp.height;
+            var ctx = canvas.getContext("2d");
+            ctx.drawImage(bmp, 0, 0);
+            this.srcImage = new Image(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            this.process();
+        });
+    }
+
+    process() {
+        if (!this.srcImage) {
+            return;
+        }
+        setTimeout(() => {
+            let image = this.srcImage;
+            this.transformers.forEach((tf) => {
+                image = tf.process(image);
+            });
+            const dstImageCanvas = this.shadowRoot.getElementById("dst-image");
+            image.draw(dstImageCanvas);
+        });
     }
 
     render() {
         return html`
+        <div>
+          <input id="file-input" type="file" accept="image/*" @change="${this.imageChanged}"></input>
+        </div>
         <div class="container">
           <div class="options">
             ${this.allTransformers.map((tf) => html`
@@ -132,6 +169,9 @@ export class TransformerListEb extends LitElement {
                 </div>
             </div>
             `)}
+          </div>
+          <div>
+            <canvas id="dst-image"></canvas>
           </div>
         </div>
         `;
