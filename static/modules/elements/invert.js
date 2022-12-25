@@ -1,6 +1,5 @@
 import {html} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
 import {TransformerEb} from "./transformer.js";
-import {invert} from "../invert.js";
 
 export class InvertEb extends TransformerEb {
     constructor() {
@@ -8,7 +7,7 @@ export class InvertEb extends TransformerEb {
     }
 
     process(image) {
-        return invert(image);
+        return image.map((color) => color.invert());
     }
 
     render() {

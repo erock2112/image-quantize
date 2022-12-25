@@ -1,6 +1,5 @@
 import {html} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
 import {TransformerEb} from "./transformer.js";
-import {Image} from "../types.js";
 
 export class GreyscaleEb extends TransformerEb {
     constructor() {

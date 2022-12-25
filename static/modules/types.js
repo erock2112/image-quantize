@@ -24,6 +24,15 @@ export class Color {
         return Math.round(0.3 * this.r + 0.59 * this.g + 0.11 * this.b);
     }
 
+    invert() {
+        return new Color(
+            255 - this.r,
+            255 - this.g,
+            255 - this.b,
+            255,
+        )
+    }
+
     greyscale() {
         const luminosity = this.luminosity();
         return new Color(luminosity, luminosity, luminosity, this.a);
