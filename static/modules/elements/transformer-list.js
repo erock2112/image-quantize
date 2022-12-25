@@ -117,11 +117,11 @@ export class TransformerListEb extends LitElement {
     }
 
     imageChanged(event) {
-        this.working = true;
         const file = event.target.files[0];
         if (!file) {
             return;
         }
+        this.working = true;
         createImageBitmap(file).then((bmp) => {
             // Draw the image into the src-image canvas.
             console.log("reading image");
