@@ -19,6 +19,15 @@ export class Color {
     equal(other) {
         return this.r === other.r && this.g === other.g && this.b === other.b && this.a === other.a;
     }
+
+    luminosity() {
+        return Math.round(0.3 * this.r + 0.59 * this.g + 0.11 * this.b);
+    }
+
+    greyscale() {
+        const luminosity = this.luminosity();
+        return new Color(luminosity, luminosity, luminosity, this.a);
+    }
 }
 
 export class Image {
@@ -65,6 +74,14 @@ export class Image {
                 callback(this.get(x, y), x, y);
             }
         }
+    }
+
+    map(callback) {
+        const result = Image.withDimensions(this.width, this.height);
+        this.forEach((color, x, y) => {
+            result.set(x, y, callback(color, x, y));
+        });
+        return result;
     }
 
     draw(canvas) {

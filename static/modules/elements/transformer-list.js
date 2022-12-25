@@ -4,6 +4,7 @@ import "./transformer.js";
 import {Image} from "../types.js";
 import {QuantizeEb} from "./quantize.js";
 import {InvertEb} from "./invert.js";
+import {GreyscaleEb} from "./greyscale.js";
 import "./icons/delete.js";
 import "./icons/expand-more.js";
 import "./icons/expand-less.js";
@@ -69,6 +70,7 @@ export class TransformerListEb extends LitElement {
         this.allTransformers = [
             ["Quantize", QuantizeEb],
             ["Invert", InvertEb],
+            ["Greyscale", GreyscaleEb],
         ];
         this.transformers = [];
         this.srcImage = null;
