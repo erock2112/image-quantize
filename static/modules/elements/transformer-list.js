@@ -15,7 +15,13 @@ export class TransformerListEb extends LitElement {
     }
     div.container {
         display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    div.mainContainer {
+        display: flex;
         flex-direction: row;
+        flex-grow: 1;
     }
     div.options {
         display: flex;
@@ -32,7 +38,7 @@ export class TransformerListEb extends LitElement {
         border: 1px solid black;
         display: flex;
         flex-direction: row;
-        margin: 10px;
+        margin: 0px 10px 20px 10px;
     }
     div.transformer > div {
         padding: 10px;
@@ -46,6 +52,9 @@ export class TransformerListEb extends LitElement {
     button {
         background-color: transparent;
         border: none;
+    }
+    spinner-eb {
+        position: fixed;
     }
     `;
 
@@ -105,6 +114,7 @@ export class TransformerListEb extends LitElement {
     }
 
     imageChanged(event) {
+        this.working = true;
         createImageBitmap(event.target.files[0]).then((bmp) => {
             // Draw the image into the src-image canvas.
             console.log("reading image");
@@ -116,6 +126,7 @@ export class TransformerListEb extends LitElement {
             this.srcImage = new Image(ctx.getImageData(0, 0, canvas.width, canvas.height));
             this.process();
         });
+        this.render();
     }
 
     process() {
@@ -138,50 +149,52 @@ export class TransformerListEb extends LitElement {
 
     render() {
         return html`
-        <div>
-          <input id="file-input" type="file" accept="image/*" @change="${this.imageChanged}"></input>
-        </div>
         <div class="container">
-          <div class="options">
-            ${this.allTransformers.map((tf) => html`
-              <div class="listitem">
-                <div>${tf[0]}</div>
-                <div class="flex"></div>
-                <div>
-                  <button @click="${() => this.add(tf[1])}">+</button>
+            <div>
+               <input id="file-input" type="file" accept="image/*" @change="${this.imageChanged}"></input>
+            </div>
+            <div class="mainContainer">
+                <div class="options">
+                    ${this.allTransformers.map((tf) => html`
+                    <div class="listitem">
+                        <div>${tf[0]}</div>
+                        <div class="flex"></div>
+                        <div>
+                        <button @click="${() => this.add(tf[1])}">+</button>
+                        </div>
+                    </div>
+                    `)}
                 </div>
-              </div>
-            `)}
-          </div>
-          <div class="flex">
-            ${this.transformers.map((tf, index) => html`
-            <div class="transformer">
-                <div><h2>${tf.name}</h2></div>
-                ${tf.render()}
-                <div class="flex"></div>
-                <div class="buttons">
-                <div>
-                <button @click="${() => this.up(index)}">
-                    <expand-less-icon-eb width=32 height=32></expand-less-icon-eb>
-                </button>
+                <div class="flex">
+                    ${this.transformers.map((tf, index) => html`
+                    <div class="transformer">
+                        <div><h2>${tf.name}</h2></div>
+                        ${tf.render()}
+                        <div class="flex"></div>
+                        <div class="buttons">
+                        <div>
+                           <button @click="${() => this.up(index)}">
+                                <expand-less-icon-eb width=32 height=32></expand-less-icon-eb>
+                            </button>
+                        </div>
+                        <div>
+                            <button @click="${() => this.delete(index)}">
+                                <delete-icon-eb width=32 height=32></delete-icon-eb>
+                            </button>
+                        </div>
+                        <div>
+                            <button @click="${() => this.down(index)}">
+                                <expand-more-icon-eb width=32 height=32></expand-more-icon-eb>
+                            </button>
+                        </div>
+                    </div>
+                    `)}
                 </div>
                 <div>
-                <button @click="${() => this.delete(index)}">
-                    <delete-icon-eb width=32 height=32></delete-icon-eb>
-                </button>
-                </div>
-                <div>
-                <button @click="${() => this.down(index)}">
-                    <expand-more-icon-eb width=32 height=32></expand-more-icon-eb>
-                </button>
+                    <spinner-eb style="visibility:${this.working ? "visible" : "hidden"}"></spinner-eb>
+                    <canvas id="dst-image" style="visibility:${this.working ? "hidden" : "visible"}"></canvas>
                 </div>
             </div>
-            `)}
-          </div>
-          <div>
-            <spinner-eb style="visibility:${this.working ? "visible" : "hidden"}"></spinner-eb>
-            <canvas id="dst-image" style="visibility:${this.working ? "hidden" : "visible"}"></canvas>
-          </div>
         </div>
         `;
     }
