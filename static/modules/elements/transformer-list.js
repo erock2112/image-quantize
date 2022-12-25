@@ -1,4 +1,5 @@
 import {css, html, LitElement} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
+import "./spinner.js";
 import "./transformer.js";
 import {Image} from "../types.js";
 import {QuantizeEb} from "./quantize.js";
@@ -51,6 +52,7 @@ export class TransformerListEb extends LitElement {
     static properties = {
         allTransformers: {type: Array},
         transformers: {type: Array},
+        working: {type: Boolean},
     };
 
     constructor() {
@@ -61,6 +63,7 @@ export class TransformerListEb extends LitElement {
         ];
         this.transformers = [];
         this.srcImage = null;
+        this.working = false;
         window.addEventListener("reprocess", this.process.bind(this));
     }
 
@@ -119,6 +122,8 @@ export class TransformerListEb extends LitElement {
         if (!this.srcImage) {
             return;
         }
+        this.working = true;
+        this.render();
         setTimeout(() => {
             let image = this.srcImage;
             this.transformers.forEach((tf) => {
@@ -126,6 +131,8 @@ export class TransformerListEb extends LitElement {
             });
             const dstImageCanvas = this.shadowRoot.getElementById("dst-image");
             image.draw(dstImageCanvas);
+            this.working = false;
+            this.render();
         });
     }
 
@@ -146,7 +153,7 @@ export class TransformerListEb extends LitElement {
               </div>
             `)}
           </div>
-          <div>
+          <div class="flex">
             ${this.transformers.map((tf, index) => html`
             <div class="transformer">
                 <div><h2>${tf.name}</h2></div>
@@ -172,7 +179,8 @@ export class TransformerListEb extends LitElement {
             `)}
           </div>
           <div>
-            <canvas id="dst-image"></canvas>
+            <spinner-eb style="visibility:${this.working ? "visible" : "hidden"}"></spinner-eb>
+            <canvas id="dst-image" style="visibility:${this.working ? "hidden" : "visible"}"></canvas>
           </div>
         </div>
         `;
