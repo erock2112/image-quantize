@@ -1,7 +1,6 @@
 import {css, html, LitElement} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
 import "./spinner.js";
 import "./transformer.js";
-import {Image} from "../types.js";
 import {QuantizeEb} from "./quantize.js";
 import {InvertEb} from "./invert.js";
 import {GreyscaleEb} from "./greyscale.js";
@@ -56,9 +55,6 @@ export class TransformerListEb extends LitElement {
     button {
         background-color: transparent;
         border: none;
-    }
-    spinner-eb {
-        position: fixed;
     }
     `;
 
@@ -134,14 +130,11 @@ export class TransformerListEb extends LitElement {
     }
 
     forceUpdate() {
-        console.log("update");
         const newTransformers = [...this.transformers];
         this.transformers = newTransformers;
-        //this.render();
     }
 
     render() {
-        console.log("render");
         return html`
         <div class="container">
             <div class="mainContainer">
@@ -162,7 +155,8 @@ export class TransformerListEb extends LitElement {
                         <div><h2>${tf.name}</h2></div>
                         ${tf.render()}
                         <div class="flex"></div>
-                        <div class="buttons">
+                        <spinner-eb style="visibility:${tf.busy ? "visible" : "hidden"}"></spinner-eb>
+                        <!--<div class="buttons">
                             <div>
                                 <button @click="${() => this.up(index)}">
                                     <expand-less-icon-eb width=32 height=32></expand-less-icon-eb>
@@ -178,7 +172,7 @@ export class TransformerListEb extends LitElement {
                                     <expand-more-icon-eb width=32 height=32></expand-more-icon-eb>
                                 </button>
                             </div>
-                        </div>
+                        </div>-->
                     </div>
                     `)}
                 </div>
