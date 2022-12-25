@@ -12,8 +12,8 @@ export class QuantizeEb extends TransformerEb {
         return this._numColors;
     }
     set numColors(numColors) {
-        console.log("Set numColors "+numColors);
         this._numColors = numColors;
+        window.dispatchEvent(new Event("reprocess"));
     }
 
     process(image) {

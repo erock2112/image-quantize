@@ -61,6 +61,7 @@ export class TransformerListEb extends LitElement {
         ];
         this.transformers = [];
         this.srcImage = null;
+        window.addEventListener("reprocess", this.process.bind(this));
     }
 
     add(typ) {
