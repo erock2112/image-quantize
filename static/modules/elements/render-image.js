@@ -1,10 +1,20 @@
 import {html} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
+import { registerProcessor } from "../processor-registry.js";
 import {TransformerEb, ImageInput} from "./transformer.js";
 
 export class RenderImageEb extends TransformerEb {
-    constructor(parent) {
-        super(parent, "Render Image", [new ImageInput("image")], []);
-        this.processFn = this.process.bind(this);
+    constructor() {
+        super("Render Image", [new ImageInput("image")], []);
+        this._process = (image) => {
+            const canvas = this.shadowRoot.querySelector("#" + this.canvasId);
+            image.draw(canvas);
+            this.hasImage = true;
+            return [];
+        };
+        this._renderContent = () => html`
+            <canvas id="${this.canvasId}"></canvas>
+            <button @click="${() => this.download()}" style="visibility:${this.hasImage ? "visible" : "hidden"}">Download</button>
+        `
         this.canvasId = (() => {
             const chars = "abcdefghijklmnopqrstuvwxyz";
             let id = "";
@@ -18,13 +28,6 @@ export class RenderImageEb extends TransformerEb {
         this.hasImage = false;
     }
 
-    process(image) {
-        const canvas = this._parent.shadowRoot.querySelector("#" + this.canvasId);
-        image.draw(canvas);
-        this.hasImage = true;
-        return [];
-    }
-
     download() {
         if (!this.hasImage) {
             return;
@@ -35,12 +38,5 @@ export class RenderImageEb extends TransformerEb {
         a.href = canvas.toDataURL();
         a.click();
     }
-
-    render() {
-        return html`
-            <canvas id="${this.canvasId}"></canvas>
-            <button @click="${() => this.download()}" style="visibility:${this.hasImage ? "visible" : "hidden"}">Download</button>
-        `
-    }
 }
-customElements.define("render-image-eb", RenderImageEb);
+registerProcessor("render-image-eb", RenderImageEb);

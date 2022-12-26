@@ -1,16 +1,16 @@
 import {html} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
+import { registerProcessor } from "../processor-registry.js";
 import {TransformerEb, ImageOutput} from "./transformer.js";
 import {Image} from "../types.js";
 
 export class ReadImageEb extends TransformerEb {
-    constructor(parent) {
-        super(parent, "Read Image", [], [new ImageOutput("image")]);
-        this.processFn = this.process.bind(this);
+    constructor() {
+        super("Read Image", [], [new ImageOutput("image")]);
+        this._process = () => [this.image];
+        this._renderContent = () => html`
+            <input id="file-input" type="file" accept="image/*" @change="${this.imageChanged.bind(this)}"></input>
+        `
         this.image = null;
-    }
-
-    process() {
-        return [this.image];
     }
 
     imageChanged(event) {
@@ -26,14 +26,8 @@ export class ReadImageEb extends TransformerEb {
             var ctx = canvas.getContext("2d");
             ctx.drawImage(bmp, 0, 0);
             this.image = new Image(ctx.getImageData(0, 0, canvas.width, canvas.height));
-            this.update();
+            this.process();
         }).bind(this));
     }
-
-    render() {
-        return html`
-        <input id="file-input" type="file" accept="image/*" @change="${this.imageChanged.bind(this)}"></input>
-        `
-    }
 }
-customElements.define("read-image-eb", ReadImageEb);
+registerProcessor("read-image-eb", ReadImageEb);

@@ -1,10 +1,16 @@
 import {html} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
+import { registerProcessor } from "../processor-registry.js";
 import {TransformerEb, PaletteInput, ImageOutput} from "./transformer.js";
 
 export class PaletteToImageEb extends TransformerEb {
-    constructor(parent) {
-        super(parent, "Palette to Image", [new PaletteInput("palette")], [new ImageOutput("image")]);
-        this.processFn = PaletteToImageEb.process;
+    constructor() {
+        super("Palette to Image", [new PaletteInput("palette")], [new ImageOutput("image")]);
+        this._process = (palette) => [palette.makeImage(this.pixels)];
+        this._renderContent = () => html`
+            <div>
+                Pixels: <input type="number" value=${this.pixels} @change="${(e) => this.pixels = e.target.value}"></input>
+            </div>
+        `
         this._pixels = 50;
     }
 
@@ -15,17 +21,5 @@ export class PaletteToImageEb extends TransformerEb {
         this._pixels = pixels;
         this.update();
     }
-
-    static process(palette) {
-        return [palette.makeImage(this.pixels)];
-    }
-
-    render() {
-        return html`
-          <div>
-            Pixels: <input type="number" value=${this.pixels} @change="${(e) => this.pixels = e.target.value}"></input>
-          </div>
-        `
-    }
 }
-customElements.define("palette-to-image-eb", PaletteToImageEb);
+registerProcessor("palette-to-image-eb", PaletteToImageEb);
