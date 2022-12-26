@@ -225,11 +225,11 @@ export class TransformerEb extends LitElement {
 
     render() {
         return html`
-        <div><h2>${this.name}</h2></div>
+        <div><h2>${this.transformers.indexOf(this) + 1}. ${this.name}</h2></div>
         <div class="inputs">
             ${this.inputs.map((input, inputIdx) => html`
             <div>
-                <label for="input${inputIdx}">Input ${input.name}</label>
+                <label for="input${inputIdx}">${capitalize(input.name)}: </label>
                 <select id="input${inputIdx}" @change="${(e) => this.updateInput(e, input)}">
                     <option value=""></option>
                     ${this.transformers.map((tf, tfIdx) => {
@@ -243,7 +243,7 @@ export class TransformerEb extends LitElement {
                             return html`<option
                                 value="${tfIdx}-${outputIdx}"
                                 ?selected="${input.from === output}"
-                                >${tf.name} ${output.name}</option>`;
+                                >${tfIdx+1}. ${tf.name}: ${capitalize(output.name)}</option>`;
                         });
                     })}
                 </select>
@@ -262,3 +262,7 @@ export class TransformerEb extends LitElement {
     }
 }
 customElements.define('transformer-eb', TransformerEb);
+
+function capitalize(str) {
+    return str[0].toUpperCase() + str.slice(1);
+}

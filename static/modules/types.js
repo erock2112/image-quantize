@@ -173,7 +173,7 @@ export class Palette {
 }
 
 export class PaletteMap {
-    constructor(to, from) {
+    constructor(from, to) {
         if (to.length !== from.length) {
             throw `Palettes have differing lengths: ${to.length} vs ${from.length}`;
         }
@@ -198,7 +198,7 @@ export class PaletteMap {
         return image.map((color) => this.get(color));
     }
 
-    static byLuminosity(to, from) {
+    static byLuminosity(from, to) {
         const fromSorted = from
             .map((color) => [color.luminosity(), color])
             .sort((a, b) => b[0] - a[0])
