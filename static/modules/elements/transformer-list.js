@@ -52,47 +52,46 @@ export class TransformerListEb extends LitElement {
     constructor() {
         super();
         this.allTransformers = getProcessors();
+        this.transformers = [];
+    }
+
+    transformersUpdated() {
+        this.transformers = [...this.transformers];
+        const parent = this.shadowRoot.querySelector("#transformerContainer");
+        parent.childNodes.forEach((child) => {
+            parent.removeChild(child);
+        });
+        this.transformers.forEach((tf) => {
+            parent.appendChild(tf);
+            tf.transformers = this.transformers;
+        });
     }
 
     add(typ) {
         const elem = document.createElement(typ);
-        const parent = this.shadowRoot.querySelector("#transformerContainer");
-        parent.appendChild(elem);
+        this.transformers.push(elem);
+        this.transformersUpdated();
     }
 
     up(index) {
         if (index == 0) {
             return;
         }
-        const newTransformers = [...this.transformers];
-        this.transformers = newTransformers;
         this.transformers.splice(index - 1, 0, this.transformers.splice(index, 1)[0]);
-        this.render();
-        this.process();
+        this.transformersUpdated();
     }
 
     down(index) {
         if (index == this.transformers.length - 1) {
             return;
         }
-        const newTransformers = [...this.transformers];
-        this.transformers = newTransformers;
         this.transformers.splice(index + 1, 0, this.transformers.splice(index, 1)[0]);
-        this.render();
-        this.process();
+        this.transformersUpdated();
     }
 
     delete(index) {
-        const newTransformers = [...this.transformers];
-        this.transformers = newTransformers;
         this.transformers.splice(index, 1);
-        this.render();
-        this.process();
-    }
-
-    forceUpdate() {
-        const newTransformers = [...this.transformers];
-        this.transformers = newTransformers;
+        this.transformersUpdated();
     }
 
     render() {

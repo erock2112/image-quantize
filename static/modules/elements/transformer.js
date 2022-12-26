@@ -14,6 +14,7 @@ export class Input extends IO {
     constructor(name, type) {
         super(name, type);
         this.processor = null;
+        this.from = null;
     }
 
     update(value) {
@@ -42,6 +43,11 @@ export class Output extends IO {
 
     addSubscriber(input) {
         this.subscribers.push(input);
+        input.update(this.value);
+    }
+
+    removeSubscriber(input) {
+        this.subscribers.splice(this.subscribers.indexOf(input), 1);
     }
 
     update(value) {
@@ -72,19 +78,13 @@ export class TransformerEb extends LitElement {
         this._process = null;
         this._renderContent = null;
         this._busy = false;
+        this.transformers = [];
     }
 
     static properties = {
         busy: {type: Boolean},
+        transformers: {type: Array},
     };
-
-    input(name) {
-        return this.inputs.find((input) => input.name == name);
-    }
-
-    output(name) {
-        return this.outputs.find((output) => output.name == name);
-    }
 
     get busy() {
         return this._busy;
@@ -94,13 +94,13 @@ export class TransformerEb extends LitElement {
     }
 
     process() {
+        console.log(`process ${this.name}`);
         if (this.inputs.some((input) => !input.value)) {
             return;
         }
         if (!this._process) {
             return;
         }
-        console.log("process " + this.name);
         this.busy = true;
         setTimeout((() => {
             const results = this._process(...this.inputs.map((inp) => inp.value));
@@ -118,6 +118,23 @@ export class TransformerEb extends LitElement {
         this.parentElement.removeChild(this);
     }
 
+    updateInput(inputIdx) {
+        const select = this.shadowRoot.querySelector("#input"+inputIdx);
+        const input = this.inputs[inputIdx];
+        if (input.from) {
+            input.from.removeSubscriber(input);
+            input.from = null;
+        }
+        if (select.value != "") {
+            const split = select.value.split("-");
+            const tf = this.transformers[parseInt(split[0])];
+            const output = tf.outputs[parseInt(split[1])];
+            input.from = output;
+            output.addSubscriber(input);
+        }
+        this.process();
+    }
+
     static styles = css`
     :host {
         align-items: center;
@@ -132,7 +149,7 @@ export class TransformerEb extends LitElement {
     div.flex {
         flex-grow: 1;
     }
-    :host > div.buttons {
+    div.buttons {
         flex-direction: column;
     }
     `;
@@ -140,15 +157,44 @@ export class TransformerEb extends LitElement {
     render() {
         return html`
         <div><h2>${this.name}</h2></div>
+        <div class="inputs">
+            ${this.inputs.map((input, inputIdx) => html`
+            <div>
+                <label for="input${inputIdx}">Input ${input.name}</label>
+                <select id="input${inputIdx}" @change="${() => this.updateInput(inputIdx)}">
+                    <option value=""></option>
+                    ${this.transformers.map((tf, tfIdx) => {
+                        if (tf === this) {
+                            return html``;
+                        }
+                        return tf.outputs.map((output, outputIdx) => {
+                            if (output.type !== input.type) {
+                                return html``;
+                            }
+                            return html`<option value="${tfIdx}-${outputIdx}">${tf.name} ${output.name}</option>`;
+                        });
+                    })}
+                </select>
+            </div>
+            `)}
+        </div>
         ${this._renderContent()}
         <div class="flex"></div>
         <spinner-eb style="visibility:${this.busy ? "visible" : "hidden"}"></spinner-eb>
-        <div class="buttons">
-            <div>
-                <button @click="${() => this.delete()}">
-                    <delete-icon-eb width=32 height=32></delete-icon-eb>
-                </button>
-            </div>
+        <div>
+            <button @click="${() => this.up()}">
+                <expand-less-icon-eb width=32 height=32></expand-less-icon-eb>
+            </button>
+        </div>
+        <div>
+            <button @click="${() => this.delete()}">
+                <delete-icon-eb width=32 height=32></delete-icon-eb>
+            </button>
+        </div>
+        <div>
+            <button @click="${() => this.down()}">
+                <expand-more-icon-eb width=32 height=32></expand-more-icon-eb>
+            </button>
         </div>
         `;
     }
