@@ -89,13 +89,6 @@ export class TransformerEb extends LitElement {
         transformers: {type: Array},
     };
 
-    get busy() {
-        return this._busy;
-    }
-    set busy(busy) {
-        this._busy = busy;
-    }
-
     process() {
         console.log(`process ${this.name}`);
         if (this.inputs.some((input) => !input.value)) {
@@ -125,14 +118,6 @@ export class TransformerEb extends LitElement {
         }).bind(this));
     }
 
-    up() {
-        this.listElement.up(this);
-    }
-
-    down() {
-        this.listElement.down(this);
-    }
-
     delete() {
         // Detach the node from any others.
         this.inputs.forEach((input) => {
@@ -148,9 +133,8 @@ export class TransformerEb extends LitElement {
         this.listElement.delete(this);
     }
 
-    updateInput(inputIdx) {
-        const select = this.shadowRoot.querySelector("#input"+inputIdx);
-        const input = this.inputs[inputIdx];
+    updateInput(e, input) {
+        const select = e.target;
         if (input.from) {
             input.from.removeSubscriber(input);
         }
@@ -160,7 +144,6 @@ export class TransformerEb extends LitElement {
             const output = tf.outputs[parseInt(split[1])];
             output.addSubscriber(input);
         }
-        this.process();
     }
 
     static styles = css`
@@ -189,7 +172,7 @@ export class TransformerEb extends LitElement {
             ${this.inputs.map((input, inputIdx) => html`
             <div>
                 <label for="input${inputIdx}">Input ${input.name}</label>
-                <select id="input${inputIdx}" @change="${() => this.updateInput(inputIdx)}">
+                <select id="input${inputIdx}" @change="${(e) => this.updateInput(e, input)}">
                     <option value=""></option>
                     ${this.transformers.map((tf, tfIdx) => {
                         if (tf === this) {
@@ -199,7 +182,10 @@ export class TransformerEb extends LitElement {
                             if (output.type !== input.type) {
                                 return html``;
                             }
-                            return html`<option value="${tfIdx}-${outputIdx}">${tf.name} ${output.name}</option>`;
+                            return html`<option
+                                value="${tfIdx}-${outputIdx}"
+                                ?selected="${input.from === output}"
+                                >${tf.name} ${output.name}</option>`;
                         });
                     })}
                 </select>
@@ -210,18 +196,8 @@ export class TransformerEb extends LitElement {
         <div class="flex"></div>
         <spinner-eb style="visibility:${this.busy ? "visible" : "hidden"}"></spinner-eb>
         <div>
-            <button @click="${() => this.up()}">
-                <expand-less-icon-eb width=32 height=32></expand-less-icon-eb>
-            </button>
-        </div>
-        <div>
             <button @click="${() => this.delete()}">
                 <delete-icon-eb width=32 height=32></delete-icon-eb>
-            </button>
-        </div>
-        <div>
-            <button @click="${() => this.down()}">
-                <expand-more-icon-eb width=32 height=32></expand-more-icon-eb>
             </button>
         </div>
         `;

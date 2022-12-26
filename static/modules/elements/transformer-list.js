@@ -74,31 +74,10 @@ export class TransformerListEb extends LitElement {
         this.transformersUpdated();
     }
 
-    up(elem) {
-        const index = this.transformers.indexOf(elem);
-        if (index == 0) {
-            return;
-        }
-        this.transformers.splice(index - 1, 0, this.transformers.splice(index, 1)[0]);
-        this.transformersUpdated();
-    }
-
-    down(elem) {
-        const index = this.transformers.indexOf(elem);
-        if (index == this.transformers.length - 1) {
-            return;
-        }
-        this.transformers.splice(index + 1, 0, this.transformers.splice(index, 1)[0]);
-        this.transformersUpdated();
-    }
-
     delete(elem) {
-        console.log(this.transformers);
         const index = this.transformers.indexOf(elem);
         this.transformers.splice(index, 1);
-        console.log(this.transformers);
         this.transformersUpdated();
-        console.log(this.transformers);
     }
 
     render() {
