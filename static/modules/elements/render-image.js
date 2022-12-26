@@ -5,34 +5,39 @@ import {TransformerEb, ImageInput} from "./transformer.js";
 export class RenderImageEb extends TransformerEb {
     constructor() {
         super("Render Image", [new ImageInput("image")], []);
+        this._preProcess = () => {
+            if (this.canvas) {
+                this.canvas.style.display = "none";
+            }
+            this.hasImage = false;
+        }
         this._process = (image) => {
-            const canvas = this.shadowRoot.querySelector("#" + this.canvasId);
-            image.draw(canvas);
+            image.draw(this.canvas);
+            this.canvas.style.display = "block";
             this.hasImage = true;
             return [];
         };
         this._renderContent = () => html`
-            <canvas id="${this.canvasId}"></canvas>
+            <canvas style="display:none"></canvas>
             <button @click="${() => this.download()}" style="visibility:${this.hasImage ? "visible" : "hidden"}">Download</button>
-        `
-        this.canvasId = (() => {
-            const chars = "abcdefghijklmnopqrstuvwxyz";
-            let id = "";
-            for (let i = 0; i < 12; i++) {
-                const idx = Math.floor(Math.random() * chars.length);
-                const char = chars[idx];
-                id += char;
-            }
-            return id;
-        })();
+        `;
+        this.canvas = null;
         this.hasImage = false;
+    }
+
+    static properties = {
+        hasImage: {type: Boolean},
+    };
+
+    updated() {
+        super.updated();
+        this.canvas = this.shadowRoot.querySelector("canvas");
     }
 
     download() {
         if (!this.hasImage) {
             return;
         }
-        const canvas = this._parent.shadowRoot.querySelector("#" + this.canvasId);
         const a = document.createElement("a");
         a.download = "edited.jpg";
         a.href = canvas.toDataURL();

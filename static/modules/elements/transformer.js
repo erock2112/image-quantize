@@ -49,6 +49,7 @@ export class Output extends IO {
 
     removeSubscriber(input) {
         input.from = null;
+        input.update(null);
         this.subscribers.splice(this.subscribers.indexOf(input), 1);
     }
 
@@ -77,6 +78,7 @@ export class TransformerEb extends LitElement {
         inputs.forEach((input) => {input.processor = this});
         this.inputs = inputs;
         this.outputs = outputs;
+        this._preProcess = null;
         this._process = null;
         this._renderContent = null;
         this._busy = false;
@@ -110,14 +112,10 @@ export class TransformerEb extends LitElement {
 
     process() {
         console.log(`process ${this.name}`);
-        if (this.inputs.some((input) => !input.value)) {
-            // Clear outputs.
-            this.outputs.forEach((output) => {
-                output.update(null);
-            });
-            return;
+        if (this._preProcess) {
+            this._preProcess();
         }
-        if (!this._process) {
+        if (this.inputs.some((input) => !input.value) || !this._process) {
             // Clear outputs.
             this.outputs.forEach((output) => {
                 output.update(null);
@@ -153,6 +151,9 @@ export class TransformerEb extends LitElement {
     }
 
     assignInputToOutput(input, output) {
+        // TODO(erock2112): each call to addSubscriber or removeSubscriber
+        // results in a call to process() which may be duplicated. We should
+        // consider debouncing calls to process().
         if (input.from) {
             input.from.removeSubscriber(input);
         }

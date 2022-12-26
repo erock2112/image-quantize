@@ -16,10 +16,11 @@ export class ReadImageEb extends TransformerEb {
     imageChanged(event) {
         const file = event.target.files[0];
         if (!file) {
+            this.image = null;
+            this.process();
             return;
         }
         createImageBitmap(file).then(((bmp) => {
-            // Draw the image into the src-image canvas.
             var canvas = document.createElement("canvas");
             canvas.width = bmp.width;
             canvas.height = bmp.height;
