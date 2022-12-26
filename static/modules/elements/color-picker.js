@@ -14,7 +14,7 @@ export class ColorPickerEb extends TransformerEb {
                 Color: <input type="color" value="${this.color}" @change="${(e => this.color = e.target.value)}"></input>
             </div>
         `
-        this._color = new Color(55, 122, 76, 255);
+        this._color = Color.random();
     }
 
     get color() {

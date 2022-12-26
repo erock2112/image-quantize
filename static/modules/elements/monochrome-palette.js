@@ -2,21 +2,47 @@ import {html} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js"
 import { registerProcessor } from "../processor-registry.js";
 import {TransformerEb, PaletteOutput, ColorInput} from "./transformer.js";
 import {monochrome} from "../palette.js";
-import { Color } from "../types.js";
 
 export class MonochromePaletteEb extends TransformerEb {
     constructor() {
         super("Monochrome Palette", [new ColorInput("color")], [new PaletteOutput("palette")]);
         this._process = (color) => {
-            return [monochrome(color, this._numColors)];
+            let numColors = this._numColors;
+            if (!this.includeBlack) {
+                numColors++;
+            }
+            if (!this.includeWhite) {
+                numColors++
+            }
+            let palette = monochrome(color, numColors);
+            if (!this.includeBlack) {
+                palette = palette.slice(1);
+            }
+            if (!this.includeWhite) {
+                palette = palette.slice(0, palette.length - 1);
+            }
+            return [palette];
         };
         this._renderContent = () => html`
             <div>
                 Steps: <input type="number" value=${this.numColors} @change="${(e) => this.numColors = e.target.value}"></input>
             </div>
+            <div>
+                Include White
+                <input type="checkbox"
+                    ?checked="${this.includeWhite}"
+                    @change="${(e) => this.includeWhite = e.target.checked}"></input>
+            </div>
+            <div>
+                Include Black
+                <input type="checkbox"
+                    ?checked="${this.includeBlack}"
+                    @change="${(e) => this.includeBlack = e.target.checked}"></input>
+            </div>
         `
         this._numColors = 4;
-        this._color = new Color(55, 122, 76, 255);
+        this._includeWhite = true;
+        this._includeBlack = true;
     }
 
     get numColors() {
@@ -25,6 +51,22 @@ export class MonochromePaletteEb extends TransformerEb {
     set numColors(numColors) {
         this._numColors = numColors;
         this.process();
+    }
+
+    get includeBlack() {
+        return this._includeBlack
+    }
+    set includeBlack(includeBlack) {
+        this._includeBlack = includeBlack;
+        this.process()
+    }
+
+    get includeWhite() {
+        return this._includeWhite
+    }
+    set includeWhite(includeWhite) {
+        this._includeWhite = includeWhite;
+        this.process()
     }
 }
 registerProcessor("monochrome-palette-eb", MonochromePaletteEb);

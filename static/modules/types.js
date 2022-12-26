@@ -6,6 +6,15 @@ export class Color {
         this.a = a;
     }
 
+    static random() {
+        return new Color(
+            Math.floor(Math.random() * 255),
+            Math.floor(Math.random() * 255),
+            Math.floor(Math.random() * 255),
+            255,
+        );
+    }
+
     static fromHex(hex) {
         const components = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
         if (!components) {
@@ -148,5 +157,13 @@ export class Palette {
             }
         });
         return image;
+    }
+
+    get length() {
+        return this.colors.length;
+    }
+
+    slice(start, end) {
+        return new Palette(this.colors.slice(start, end));
     }
 }
