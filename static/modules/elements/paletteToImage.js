@@ -19,7 +19,7 @@ export class PaletteToImageEb extends TransformerEb {
     }
     set pixels(pixels) {
         this._pixels = pixels;
-        this.update();
+        this.process();
     }
 }
 registerProcessor("palette-to-image-eb", PaletteToImageEb);
