@@ -1,5 +1,5 @@
 import {css, html, LitElement} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
-import {Image, Palette} from "../types.js";
+import {Image, Palette, Color} from "../types.js";
 import "./spinner.js";
 
 export class IO {
@@ -32,6 +32,12 @@ export class ImageInput extends Input {
 export class PaletteInput extends Input {
     constructor(name) {
         super(name, Palette);
+    }
+}
+
+export class ColorInput extends Input {
+    constructor(name) {
+        super(name, Color);
     }
 }
 
@@ -71,6 +77,12 @@ export class PaletteOutput extends Output {
     }
 }
 
+export class ColorOutput extends Output {
+    constructor(name) {
+        super(name, Color);
+    }
+}
+
 export class TransformerEb extends LitElement {
     constructor(name, inputs, outputs) {
         super();
@@ -91,6 +103,11 @@ export class TransformerEb extends LitElement {
         busy: {type: Boolean},
         _transformers: {type: Array},
     };
+
+    connectedCallback() {
+        super.connectedCallback();
+        this.process();
+    }
 
     set transformers(transformers) {
         // Set default inputs to the last valid output in the list.
@@ -116,6 +133,8 @@ export class TransformerEb extends LitElement {
             this._preProcess();
         }
         if (this.inputs.some((input) => !input.value) || !this._process) {
+            console.log("  conditions not met; not processing");
+            console.log(this.inputs);
             // Clear outputs.
             this.outputs.forEach((output) => {
                 output.update(null);

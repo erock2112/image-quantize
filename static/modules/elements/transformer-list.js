@@ -1,16 +1,18 @@
 import {css, html, LitElement} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
 import "./spinner.js";
 import "./transformer.js";
-import {QuantizeEb} from "./quantize.js";
-import {InvertEb} from "./invert.js";
-import {GreyscaleEb} from "./greyscale.js";
-import {PaletteToImageEb} from "./paletteToImage.js";
+import "./quantize.js";
+import "./invert.js";
+import "./greyscale.js";
+import "./paletteToImage.js";
 import "./icons/delete.js";
 import "./icons/expand-more.js";
 import "./icons/expand-less.js";
-import { RenderImageEb } from "./render-image.js";
-import { ReadImageEb } from "./read-image.js";
-import { getProcessors } from "../processor-registry.js";
+import "./render-image.js";
+import "./read-image.js";
+import "./monochrome-palette.js";
+import "./color-picker.js";
+import {getProcessors} from "../processor-registry.js";
 
 export class TransformerListEb extends LitElement {
     static styles = css`

@@ -6,8 +6,17 @@ export class Color {
         this.a = a;
     }
 
-    toPoint() {
-        return [this.r, this.g, this.b];
+    static fromHex(hex) {
+        const components = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+        if (!components) {
+            throw `invalid hex value "${hex}"`;
+        }
+        return new Color(parseInt(components[1], 16), parseInt(components[2], 16), parseInt(components[3], 16), 255);
+    }
+
+    toHex() {
+        const componentToHex = (component) => component.toString(16).padStart(2, "0");
+        return `#${componentToHex(this.r)}${componentToHex(this.g)}${componentToHex(this.b)}`
     }
 
     sqDist(other) {
