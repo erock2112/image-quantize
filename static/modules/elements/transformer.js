@@ -82,12 +82,31 @@ export class TransformerEb extends LitElement {
         this._busy = false;
         this.transformers = [];
         this.listElement = null;
+        this.assignedDefaultInputs = false;
     }
 
     static properties = {
         busy: {type: Boolean},
-        transformers: {type: Array},
+        _transformers: {type: Array},
     };
+
+    set transformers(transformers) {
+        // Set default inputs to the last valid output in the list.
+        if (!this.assignedDefaultInputs) {
+            this.assignedDefaultInputs = true;
+            this.inputs.forEach((input) => {
+                transformers.filter((tf) => tf !== this).forEach((tf) => {
+                    tf.outputs.filter((output) => output.type === input.type).forEach((output) => {
+                        this.assignInputToOutput(input, output);
+                    });
+                });
+            });
+        }
+        this._transformers = transformers;
+    }
+    get transformers() {
+        return this._transformers;
+    }
 
     process() {
         console.log(`process ${this.name}`);
@@ -133,17 +152,24 @@ export class TransformerEb extends LitElement {
         this.listElement.delete(this);
     }
 
-    updateInput(e, input) {
-        const select = e.target;
+    assignInputToOutput(input, output) {
         if (input.from) {
             input.from.removeSubscriber(input);
         }
+        if (output) {
+            output.addSubscriber(input);
+        }
+    }
+
+    updateInput(e, input) {
+        const select = e.target;
+        let output = null;
         if (select.value != "") {
             const split = select.value.split("-");
             const tf = this.transformers[parseInt(split[0])];
-            const output = tf.outputs[parseInt(split[1])];
-            output.addSubscriber(input);
+            output = tf.outputs[parseInt(split[1])];
         }
+        this.assignInputToOutput(input, output);
     }
 
     static styles = css`
