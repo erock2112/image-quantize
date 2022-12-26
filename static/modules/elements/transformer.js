@@ -1,5 +1,5 @@
 import {css, html, LitElement} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
-import {Image, Palette, Color} from "../types.js";
+import {Image, Palette, Color, PaletteMap} from "../types.js";
 import "./spinner.js";
 
 export class IO {
@@ -32,6 +32,12 @@ export class ImageInput extends Input {
 export class PaletteInput extends Input {
     constructor(name) {
         super(name, Palette);
+    }
+}
+
+export class PaletteMapInput extends Input {
+    constructor(name) {
+        super(name, PaletteMap);
     }
 }
 
@@ -74,6 +80,12 @@ export class ImageOutput extends Output {
 export class PaletteOutput extends Output {
     constructor(name) {
         super(name, Palette);
+    }
+}
+
+export class PaletteMapOutput extends Output {
+    constructor(name) {
+        super(name, PaletteMap);
     }
 }
 

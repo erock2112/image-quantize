@@ -12,6 +12,8 @@ import "./render-image.js";
 import "./read-image.js";
 import "./monochrome-palette.js";
 import "./color-picker.js";
+import "./palette-map.js";
+import "./apply-palette-map.js";
 import {getProcessors} from "../processor-registry.js";
 
 export class TransformerListEb extends LitElement {

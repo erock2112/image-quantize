@@ -166,4 +166,47 @@ export class Palette {
     slice(start, end) {
         return new Palette(this.colors.slice(start, end));
     }
+
+    map(cb) {
+        return this.colors.map(cb);
+    }
+}
+
+export class PaletteMap {
+    constructor(to, from) {
+        if (to.length !== from.length) {
+            throw `Palettes have differing lengths: ${to.length} vs ${from.length}`;
+        }
+        this.to = to;
+        this.from = from;
+    }
+
+    get(color) {
+        const index = this.from.findIndex((srcColor) => (
+            srcColor.r == color.r
+            && srcColor.g == color.g
+            && srcColor.b == color.b
+            && srcColor.a == color.a));
+        if (index == -1) {
+            console.log(`didn't find ${color.toHex()} in ${this.from.map((c) => c.toHex())}`)
+            throw `Source color not found in source palette!`;
+        }
+        return this.to[index];
+    }
+
+    apply(image) {
+        return image.map((color) => this.get(color));
+    }
+
+    static byLuminosity(to, from) {
+        const fromSorted = from
+            .map((color) => [color.luminosity(), color])
+            .sort((a, b) => b[0] - a[0])
+            .map((ele) => ele[1]);
+        const toSorted = to
+            .map((color) => [color.luminosity(), color])
+            .sort((a, b) => b[0] - a[0])
+            .map((ele) => ele[1]);
+        return new PaletteMap(fromSorted, toSorted);
+    }
 }
