@@ -42,11 +42,13 @@ export class Output extends IO {
     }
 
     addSubscriber(input) {
+        input.from = this;
         this.subscribers.push(input);
         input.update(this.value);
     }
 
     removeSubscriber(input) {
+        input.from = null;
         this.subscribers.splice(this.subscribers.indexOf(input), 1);
     }
 
@@ -79,6 +81,7 @@ export class TransformerEb extends LitElement {
         this._renderContent = null;
         this._busy = false;
         this.transformers = [];
+        this.listElement = null;
     }
 
     static properties = {
@@ -96,9 +99,17 @@ export class TransformerEb extends LitElement {
     process() {
         console.log(`process ${this.name}`);
         if (this.inputs.some((input) => !input.value)) {
+            // Clear outputs.
+            this.outputs.forEach((output) => {
+                output.update(null);
+            });
             return;
         }
         if (!this._process) {
+            // Clear outputs.
+            this.outputs.forEach((output) => {
+                output.update(null);
+            });
             return;
         }
         this.busy = true;
@@ -114,8 +125,27 @@ export class TransformerEb extends LitElement {
         }).bind(this));
     }
 
+    up() {
+        this.listElement.up(this);
+    }
+
+    down() {
+        this.listElement.down(this);
+    }
+
     delete() {
-        this.parentElement.removeChild(this);
+        // Detach the node from any others.
+        this.inputs.forEach((input) => {
+            if (input.from) {
+                input.from.removeSubscriber(input);
+            }
+        });
+        this.outputs.forEach((output) => {
+            output.subscribers.forEach((input) => {
+                output.removeSubscriber(input);
+            });
+        });
+        this.listElement.delete(this);
     }
 
     updateInput(inputIdx) {
@@ -123,13 +153,11 @@ export class TransformerEb extends LitElement {
         const input = this.inputs[inputIdx];
         if (input.from) {
             input.from.removeSubscriber(input);
-            input.from = null;
         }
         if (select.value != "") {
             const split = select.value.split("-");
             const tf = this.transformers[parseInt(split[0])];
             const output = tf.outputs[parseInt(split[1])];
-            input.from = output;
             output.addSubscriber(input);
         }
         this.process();

@@ -58,9 +58,9 @@ export class TransformerListEb extends LitElement {
     transformersUpdated() {
         this.transformers = [...this.transformers];
         const parent = this.shadowRoot.querySelector("#transformerContainer");
-        parent.childNodes.forEach((child) => {
-            parent.removeChild(child);
-        });
+        while (parent.firstChild) {
+            parent.removeChild(parent.firstChild);
+        }
         this.transformers.forEach((tf) => {
             parent.appendChild(tf);
             tf.transformers = this.transformers;
@@ -69,11 +69,13 @@ export class TransformerListEb extends LitElement {
 
     add(typ) {
         const elem = document.createElement(typ);
+        elem.listElement = this;
         this.transformers.push(elem);
         this.transformersUpdated();
     }
 
-    up(index) {
+    up(elem) {
+        const index = this.transformers.indexOf(elem);
         if (index == 0) {
             return;
         }
@@ -81,7 +83,8 @@ export class TransformerListEb extends LitElement {
         this.transformersUpdated();
     }
 
-    down(index) {
+    down(elem) {
+        const index = this.transformers.indexOf(elem);
         if (index == this.transformers.length - 1) {
             return;
         }
@@ -89,9 +92,13 @@ export class TransformerListEb extends LitElement {
         this.transformersUpdated();
     }
 
-    delete(index) {
+    delete(elem) {
+        console.log(this.transformers);
+        const index = this.transformers.indexOf(elem);
         this.transformers.splice(index, 1);
+        console.log(this.transformers);
         this.transformersUpdated();
+        console.log(this.transformers);
     }
 
     render() {
