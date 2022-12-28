@@ -147,11 +147,17 @@ export class Palette {
     }
 
     makeImage(blockWidthPixels) {
-        const image = Image.withDimensions(blockWidthPixels, blockWidthPixels * this.colors.length);
+        const dimensions = getDimensions(this.colors.length);
+        const colorWidth = dimensions[0];
+        const colorHeight = dimensions[1];
+        console.log(`Dimensions: (${colorWidth}, ${colorHeight})`);
+        const image = Image.withDimensions(blockWidthPixels * colorWidth, blockWidthPixels * colorHeight);
         this.colors.forEach((color, index) => {
-            const yOffset = index * blockWidthPixels;
-            for (let x = 0; x < blockWidthPixels; x++) {
-                for (let y = yOffset; y < yOffset + blockWidthPixels; y++) {
+            const offsetX = (index % colorWidth) * blockWidthPixels;
+            const offsetY = Math.floor(index / colorWidth) * blockWidthPixels;
+            console.log(`  ${index}: ${color.toHex()} -> (${offsetX}, ${offsetY})`);
+            for (let x = offsetX; x < offsetX + blockWidthPixels; x++) {
+                for (let y = offsetY; y < offsetY + blockWidthPixels; y++) {
                     image.set(x, y, color);
                 }
             }
@@ -169,6 +175,10 @@ export class Palette {
 
     map(cb) {
         return this.colors.map(cb);
+    }
+
+    forEach(cb) {
+        this.colors.forEach(cb);
     }
 }
 
@@ -209,4 +219,15 @@ export class PaletteMap {
             .map((ele) => ele[1]);
         return new PaletteMap(fromSorted, toSorted);
     }
+}
+
+function getDimensions(size) {
+    const sqrt = Math.sqrt(size);
+    let best = 1;
+    for (let i = 1; i <= sqrt; i++) {
+        if (size % i == 0) {
+            best = i;
+        }
+    }
+    return [best, size / best];
 }

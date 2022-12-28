@@ -1,4 +1,4 @@
-import {Color, Image} from "./types.js";
+import {Color} from "./types.js";
 
 export function interpolate(color1, color2, tMax, t) {
     const p = t / tMax;

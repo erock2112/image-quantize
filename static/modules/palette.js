@@ -1,12 +1,21 @@
+import { interpolate } from "./gradient.js";
 import { Color, Palette } from "./types.js";
 
-export function monochrome(src, steps) {
+export function monochrome(src, steps, includeBlack=true, includeWhite=true) {
     if (steps == 0) {
-        return [];
+        return new Palette([]);
     } else if (steps == 1) {
-        return [src];
+        return new Palette([src]);
     }
-    const palette = [];
+
+    if (!includeBlack) {
+        steps++;
+    }
+    if (!includeWhite) {
+        steps++;
+    }
+
+    let palette = [];
     const baseLuminosity = src.luminosity();
     const ratioLeftR = src.r / baseLuminosity;
     const ratioLeftG = src.g / baseLuminosity;
@@ -33,5 +42,39 @@ export function monochrome(src, steps) {
         const color = new Color(Math.floor(r), Math.floor(g), Math.floor(b), 255);
         palette.push(color);
     }
+
+    if (!includeBlack) {
+        palette = palette.slice(1);
+    }
+    if (!includeWhite) {
+        palette = palette.slice(0, palette.length - 1);
+    }
+
     return new Palette(palette);
+}
+
+export function duotone(color1, color2, steps) {
+    if (steps == 0) {
+        return new Palette([]);
+    } else if (steps == 1) {
+        return new Palette([interpolate(color1, color2, 2, 1)]);
+    } else if (steps == 2) {
+        return new Palette([color1, color2]);
+    }
+    const colors = [];
+    for (let i = 0; i < steps; i++) {
+        colors.push(interpolate(color1, color2, steps-1, i));
+    }
+    return new Palette(colors);
+}
+
+export function duotoneSquare(color1, color2, steps) {
+    const base = duotone(color1, color2, steps);
+    const result = [];
+    base.forEach((baseColor) => {
+        monochrome(baseColor, steps, false, false).forEach((resultColor) => {
+            result.push(resultColor);
+        })
+    });
+    return new Palette(result);
 }

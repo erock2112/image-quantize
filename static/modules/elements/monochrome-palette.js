@@ -6,23 +6,8 @@ import {monochrome} from "../palette.js";
 export class MonochromePaletteEb extends TransformerEb {
     constructor() {
         super("Monochrome Palette", [new ColorInput("color")], [new PaletteOutput("palette")]);
-        this._process = (color) => {
-            let numColors = this._numColors;
-            if (!this.includeBlack) {
-                numColors++;
-            }
-            if (!this.includeWhite) {
-                numColors++
-            }
-            let palette = monochrome(color, numColors);
-            if (!this.includeBlack) {
-                palette = palette.slice(1);
-            }
-            if (!this.includeWhite) {
-                palette = palette.slice(0, palette.length - 1);
-            }
-            return [palette];
-        };
+        this._process = (color) => [
+            monochrome(color, this.numColors, this.includeBlack, this.includeWhite)];
         this._renderContent = () => html`
             <div>
                 Steps: <input type="number" value=${this.numColors} @change="${(e) => this.numColors = e.target.value}"></input>
