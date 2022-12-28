@@ -31,7 +31,7 @@ export class PaletteMapEb extends TransformerEb {
     }
     set selectedIndex(idx) {
         this._selectedIndex = idx;
-        this.process();
+        this.process(true);
     }
 }
 registerProcessor("palette-map-eb", PaletteMapEb);

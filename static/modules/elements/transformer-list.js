@@ -76,6 +76,8 @@ export class TransformerListEb extends LitElement {
         elem.listElement = this;
         this.transformers.push(elem);
         this.transformersUpdated();
+        console.log(`Calling process on ${elem.name}`);
+        elem.process();
     }
 
     delete(elem) {

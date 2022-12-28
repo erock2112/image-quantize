@@ -50,7 +50,7 @@ export class MonochromePaletteEb extends TransformerEb {
     }
     set numColors(numColors) {
         this._numColors = numColors;
-        this.process();
+        this.process(true);
     }
 
     get includeBlack() {
@@ -58,7 +58,7 @@ export class MonochromePaletteEb extends TransformerEb {
     }
     set includeBlack(includeBlack) {
         this._includeBlack = includeBlack;
-        this.process()
+        this.process(true);
     }
 
     get includeWhite() {
@@ -66,7 +66,7 @@ export class MonochromePaletteEb extends TransformerEb {
     }
     set includeWhite(includeWhite) {
         this._includeWhite = includeWhite;
-        this.process()
+        this.process(true);
     }
 }
 registerProcessor("monochrome-palette-eb", MonochromePaletteEb);

@@ -23,7 +23,7 @@ export class QuantizeEb extends TransformerEb {
     }
     set numColors(numColors) {
         this._numColors = numColors;
-        this.process();
+        this.process(true);
     }
 }
 registerProcessor("quantize-eb", QuantizeEb);

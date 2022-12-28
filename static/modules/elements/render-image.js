@@ -10,10 +10,8 @@ export class RenderImageEb extends TransformerEb {
         super("Render Image", [new ImageInput("image")], []);
         this.displayCanvas = null;
         this.fullSizeCanvas = null;
-        this.hasImage = false;
         this._preProcess = () => {
             this.fullSizeCanvas = null;
-            this.hasImage = false;
         }
         this._process = (image) => {
             // Draw the image into the full-size, off-screen canvas.
@@ -32,17 +30,15 @@ export class RenderImageEb extends TransformerEb {
             this.displayCanvas.height = fullSizeCanvas.height * scale;
             const ctx = this.displayCanvas.getContext("2d");
             ctx.drawImage(fullSizeCanvas, 0, 0, fullSizeCanvas.width, fullSizeCanvas.height, 0, 0, this.displayCanvas.width, this.displayCanvas.height);
-
-            this.hasImage = true;
             return [];
         };
         this._renderContent = () => html`
             <canvas
-                style="visibility:${this.hasImage ? "visible" : "hidden"}"
+                style="visibility:${this.dirty ? "hidden" : "visible"}"
                 width="${RenderImageEb.maxDisplayWidth}"
                 height="${RenderImageEb.maxDisplayHeight}"
                 ></canvas>
-            <button @click="${() => this.download()}" style="visibility:${this.hasImage ? "visible" : "hidden"}">Download</button>
+            <button @click="${() => this.download()}" style="visibility:${this.dirty ? "hidden" : "visible"}">Download</button>
         `;
     }
 

@@ -7,6 +7,11 @@ export class IO {
         this.name = name;
         this.type = type;
         this.value = null;
+        this._dirty = true;
+    }
+
+    get dirty() {
+        return this._dirty;
     }
 }
 
@@ -19,7 +24,14 @@ export class Input extends IO {
 
     update(value) {
         this.value = value;
+        this._dirty = false;
+        //console.log(`Input "${this.name}" updated with value ${value}; updating processor ${this.processor.name}`);
         this.processor.process();
+    }
+
+    setDirty() {
+        this._dirty = true;
+        this.processor.setDirty();
     }
 }
 
@@ -67,7 +79,17 @@ export class Output extends IO {
 
     update(value) {
         this.value = value;
-        this.subscribers.forEach((subscriber) => subscriber.update(value));
+        this._dirty = false;
+        this.subscribers.forEach((subscriber) => {
+            //console.log("Updating subscriber: ");
+            //console.log(subscriber);
+            subscriber.update(value);
+        });
+    }
+
+    setDirty() {
+        this._dirty = true;
+        this.subscribers.forEach((sub) => sub.setDirty());
     }
 }
 
@@ -102,23 +124,30 @@ export class TransformerEb extends LitElement {
         inputs.forEach((input) => {input.processor = this});
         this.inputs = inputs;
         this.outputs = outputs;
+        this._cachedInputs = null;
         this._preProcess = null;
         this._process = null;
         this._renderContent = null;
-        this._busy = false;
+        this._dirty = false;
         this.transformers = [];
         this.listElement = null;
         this.assignedDefaultInputs = false;
     }
 
     static properties = {
-        busy: {type: Boolean},
+        _dirty: {type: Boolean},
         _transformers: {type: Array},
     };
 
-    connectedCallback() {
-        super.connectedCallback();
-        this.process();
+    get dirty() {
+        return this._dirty;
+    }
+    set dirty(dirty) {
+        this._dirty = dirty;
+    }
+    setDirty() {
+        this.dirty = true;
+        this.outputs.forEach((output) => output.setDirty());
     }
 
     set transformers(transformers) {
@@ -139,31 +168,46 @@ export class TransformerEb extends LitElement {
         return this._transformers;
     }
 
-    process() {
-        console.log(`process ${this.name}`);
+    process(force) {
+        console.log(`process called on ${this.name}`);
         if (this._preProcess) {
             this._preProcess();
         }
         if (this.inputs.some((input) => !input.value) || !this._process) {
-            console.log("  conditions not met; not processing");
-            console.log(this.inputs);
+            //console.log("  conditions not met; not processing");
+            //console.log(this.inputs);
             // Clear outputs.
             this.outputs.forEach((output) => {
                 output.update(null);
             });
             return;
         }
-        this.busy = true;
+        if (this.inputs.some((input) => input.dirty)) {
+            //console.log("  at least one input is dirty; not processing");
+            //console.log(this.inputs);
+            return;
+        }
+        const inputs = this.inputs.map((input) => input.value);
+        if (!force && this._cachedInputs && this._cachedInputs.length == inputs.length && this._cachedInputs.every((input, index) => input === inputs[index])) {
+            //console.log("  inputs same as cached; skipping processing");
+            //console.log(inputs);
+            return;
+        }
+        this._cachedInputs = inputs;
+        console.log(`  processing ${this.name}...`);
+        //console.log(inputs);
+        this.setDirty();
         setTimeout((() => {
-            const results = this._process(...this.inputs.map((inp) => inp.value));
-            this.busy = false;
+            const results = this._process(...inputs);
             if (results.length != this.outputs.length) {
                 throw `Got incorrect number of results; ${results} vs ${this.outputs}`;
             }
+            //console.log(`  ${this.name} updating ${this.outputs.length} outputs`);
             this.outputs.forEach((output, index) => {
                 output.update(results[index]);
             });
-        }).bind(this));
+            this.dirty = false;
+        }).bind(this), 1000);
     }
 
     delete() {
@@ -252,7 +296,7 @@ export class TransformerEb extends LitElement {
         </div>
         ${this._renderContent()}
         <div class="flex"></div>
-        <spinner-eb style="visibility:${this.busy ? "visible" : "hidden"}"></spinner-eb>
+        <spinner-eb style="visibility:${this.dirty ? "visible" : "hidden"}"></spinner-eb>
         <div>
             <button @click="${() => this.delete()}">
                 <delete-icon-eb width=32 height=32></delete-icon-eb>

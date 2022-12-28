@@ -27,7 +27,7 @@ export class ReadImageEb extends TransformerEb {
             var ctx = canvas.getContext("2d");
             ctx.drawImage(bmp, 0, 0);
             this.image = new Image(ctx.getImageData(0, 0, canvas.width, canvas.height));
-            this.process();
+            this.process(true);
         }).bind(this));
     }
 }

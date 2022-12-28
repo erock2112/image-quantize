@@ -22,7 +22,7 @@ export class ColorPickerEb extends TransformerEb {
     }
     set color(hex) {
         this._color = Color.fromHex(hex);
-        this.process();
+        this.process(true);
     }
 }
 registerProcessor("color-picker-eb", ColorPickerEb);
