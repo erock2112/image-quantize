@@ -29,6 +29,7 @@ export class Input extends IO {
         this.processor.process();
     }
 
+
     setDirty() {
         this._dirty = true;
         this.processor.setDirty();
@@ -207,7 +208,7 @@ export class TransformerEb extends LitElement {
                 output.update(results[index]);
             });
             this.dirty = false;
-        }).bind(this), 1000);
+        }).bind(this));
     }
 
     delete() {
@@ -226,9 +227,6 @@ export class TransformerEb extends LitElement {
     }
 
     assignInputToOutput(input, output) {
-        // TODO(erock2112): each call to addSubscriber or removeSubscriber
-        // results in a call to process() which may be duplicated. We should
-        // consider debouncing calls to process().
         if (input.from) {
             input.from.removeSubscriber(input);
         }
