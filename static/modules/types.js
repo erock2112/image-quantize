@@ -150,12 +150,10 @@ export class Palette {
         const dimensions = getDimensions(this.colors.length);
         const colorWidth = dimensions[0];
         const colorHeight = dimensions[1];
-        console.log(`Dimensions: (${colorWidth}, ${colorHeight})`);
         const image = Image.withDimensions(blockWidthPixels * colorWidth, blockWidthPixels * colorHeight);
         this.colors.forEach((color, index) => {
             const offsetX = (index % colorWidth) * blockWidthPixels;
             const offsetY = Math.floor(index / colorWidth) * blockWidthPixels;
-            console.log(`  ${index}: ${color.toHex()} -> (${offsetX}, ${offsetY})`);
             for (let x = offsetX; x < offsetX + blockWidthPixels; x++) {
                 for (let y = offsetY; y < offsetY + blockWidthPixels; y++) {
                     image.set(x, y, color);
@@ -222,12 +220,11 @@ export class PaletteMap {
 }
 
 function getDimensions(size) {
-    const sqrt = Math.sqrt(size);
-    let best = 1;
-    for (let i = 1; i <= sqrt; i++) {
+    const sqrt = Math.floor(Math.sqrt(size));
+    for (let i = sqrt; i > 1; i--) {
         if (size % i == 0) {
-            best = i;
+            return [i, size / i];
         }
     }
-    return [best, size / best];
+    return [1, size];
 }
