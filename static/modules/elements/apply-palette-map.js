@@ -6,7 +6,6 @@ export class ApplyPaletteMapEb extends TransformerEb {
     constructor() {
         super("Apply Palette Mapping", [new ImageInput("image"), new PaletteMapInput("mapping")], [new ImageOutput("image")]);
         this._process = (image, map) => {
-            console.log(map);
             return [map.apply(image)];
         };
         this._renderContent = () => html``

@@ -98,7 +98,7 @@ export class Image {
     forEach(callback) {
         for (let x = 0; x < this.width; x++) {
             for (let y = 0; y < this.height; y++) {
-                callback(this.get(x, y), x, y);
+                callback(this.get(x, y), x, y, this.width, this.height);
             }
         }
     }
@@ -106,7 +106,7 @@ export class Image {
     map(callback) {
         const result = Image.withDimensions(this.width, this.height);
         this.forEach((color, x, y) => {
-            result.set(x, y, callback(color, x, y));
+            result.set(x, y, callback(color, x, y, this.width, this.height));
         });
         return result;
     }
