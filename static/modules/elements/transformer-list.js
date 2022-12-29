@@ -2,8 +2,6 @@ import {css, html, LitElement} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core
 import "./spinner.js";
 import "./transformer.js";
 import "./quantize.js";
-import "./invert.js";
-import "./greyscale.js";
 import "./paletteToImage.js";
 import "./icons/delete.js";
 import "./icons/expand-more.js";
@@ -17,6 +15,7 @@ import "./apply-palette-map.js";
 import "./gradient.js";
 import "./duotone-palette.js";
 import "./duotone-square-palette.js";
+import "./filter.js";
 import {getProcessors} from "../processor-registry.js";
 
 export class TransformerListEb extends LitElement {

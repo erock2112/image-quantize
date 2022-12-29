@@ -55,6 +55,15 @@ export class Color {
         const luminosity = this.luminosity();
         return new Color(luminosity, luminosity, luminosity, this.a);
     }
+
+    sepia() {
+        return new Color(
+            (this.r * .393) + (this.g *.769) + (this.b * .189),
+            (this.r * .349) + (this.g *.686) + (this.b * .168),
+            (this.r * .272) + (this.g *.534) + (this.b * .131),
+            this.a,
+        );
+    }
 }
 
 export class Image {
@@ -105,8 +114,8 @@ export class Image {
 
     map(callback) {
         const result = Image.withDimensions(this.width, this.height);
-        this.forEach((color, x, y) => {
-            result.set(x, y, callback(color, x, y, this.width, this.height));
+        this.forEach((color, x, y, width, height) => {
+            result.set(x, y, callback(color, x, y, width, height));
         });
         return result;
     }
