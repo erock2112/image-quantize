@@ -1,4 +1,4 @@
-import { interpolate } from "./gradient.js";
+import { interpolate, twoColorBw } from "./gradient.js";
 import { Color, Palette } from "./types.js";
 
 export function monochrome(src, steps, includeBlack=true, includeWhite=true) {
@@ -69,12 +69,11 @@ export function duotone(color1, color2, steps) {
 }
 
 export function duotoneSquare(color1, color2, steps) {
-    const base = duotone(color1, color2, steps);
     const result = [];
-    base.forEach((baseColor) => {
-        monochrome(baseColor, steps, false, false).forEach((resultColor) => {
-            result.push(resultColor);
-        })
-    });
+    for (let x = 0; x < steps; x++) {
+        for (let y = 0; y < steps; y++) {
+            result.push(twoColorBw(color1, color2, x, y, steps-1, steps-1));
+        }
+    }
     return new Palette(result);
 }

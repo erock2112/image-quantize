@@ -1,7 +1,7 @@
 import {html} from "https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js";
 import { registerProcessor } from "../processor-registry.js";
 import {TransformerEb, ImageOutput, ColorInput} from "./transformer.js";
-import { diagonal1, diagonal2, horizontal, vertical } from "../gradient.js";
+import { diagonal1, diagonal2, horizontal, twoColorBw, vertical } from "../gradient.js";
 import { Image } from "../types.js";
 
 export class GradientEb extends TransformerEb {
@@ -16,6 +16,7 @@ export class GradientEb extends TransformerEb {
             ["horizontal", horizontal],
             ["diagonal (top left to bottom right)", diagonal1],
             ["diagonal (bottom left to top right)", diagonal2],
+            ["two color with black and white", twoColorBw],
         ];
         this._renderContent = () => html`
             <div>

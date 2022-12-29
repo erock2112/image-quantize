@@ -26,3 +26,13 @@ export function diagonal1(color1, color2, x, y, width, height) {
 export function diagonal2(color1, color2, x, y, width, height) {
     return interpolate(color1, color2, 2, (width-x)/width + y/height);
 }
+
+export function fourColor(color1, color2, color3, color4, x, y, width, height) {
+    const mid1 = interpolate(color2, color1, width, x);
+    const mid2 = interpolate(color3, color4, width, x);
+    return interpolate(mid2, mid1, height, y);
+}
+
+export function twoColorBw(color1, color2, x, y, width, height) {
+    return fourColor(new Color(0, 0, 0, 255), color1, new Color(255, 255, 255, 255), color2, x, y, width, height);
+}
