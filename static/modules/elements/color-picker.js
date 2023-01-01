@@ -18,7 +18,7 @@ export class ColorPickerEb extends TransformerEb {
     }
 
     get color() {
-        return this._color.toHex();
+        return this._color.hex();
     }
     set color(hex) {
         this._color = Color.fromHex(hex);

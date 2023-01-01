@@ -1,9 +1,11 @@
+import { hslToRgb, rgbToHsl, rgbToHsv } from "./elements/rgb-hsl-hsv.js";
+
 export class Color {
     constructor(r, g, b, a) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.a = a;
+        this.r = Math.max(0, Math.min(r, 255));
+        this.g = Math.max(0, Math.min(g, 255));
+        this.b = Math.max(0, Math.min(b, 255));
+        this.a = Math.max(0, Math.min(a, 255));
     }
 
     static random() {
@@ -23,7 +25,17 @@ export class Color {
         return new Color(parseInt(components[1], 16), parseInt(components[2], 16), parseInt(components[3], 16), 255);
     }
 
-    toHex() {
+    static fromHsl(h, s, l) {
+        const rgb = hslToRgb(h, s, l);
+        return new Color(rgb[0], rgb[1], rgb[2], 255);
+    }
+
+    static fromHsv(h, s, v) {
+        const rgb = hsvToRgb(h, s, v);
+        return new Color(rgb[0], rgb[1], rgb[2], 255);
+    }
+
+    hex() {
         const componentToHex = (component) => component.toString(16).padStart(2, "0");
         return `#${componentToHex(this.r)}${componentToHex(this.g)}${componentToHex(this.b)}`
     }
@@ -36,6 +48,14 @@ export class Color {
 
     equal(other) {
         return this.r === other.r && this.g === other.g && this.b === other.b && this.a === other.a;
+    }
+
+    hsl() {
+        return rgbToHsl(this.r, this.g, this.b);
+    }
+
+    hsv() {
+        return rgbToHsv(this.r, this.g, this.b);
     }
 
     luminosity() {
@@ -205,7 +225,7 @@ export class PaletteMap {
             && srcColor.b == color.b
             && srcColor.a == color.a));
         if (index == -1) {
-            console.log(`didn't find ${color.toHex()} in ${this.from.map((c) => c.toHex())}`)
+            console.log(`didn't find ${color.hex()} in ${this.from.map((c) => c.hex())}`)
             throw `Source color not found in source palette!`;
         }
         return this.to[index];
