@@ -155,12 +155,6 @@ export class TransformerEb extends LitElement {
         // Set default inputs to the last valid output in the list.
         if (!this.assignedDefaultInputs) {
             this.assignedDefaultInputs = true;
-            const inputTypes = this.inputs.map((input) => input.type).reduce((acc, val) => {
-                if (acc.indexOf(val) == -1) {
-                    acc.push(val);
-                }
-                return acc
-            }, []);
             const outputsByType = {};
             transformers
                 .filter((tf) => tf !== this)
