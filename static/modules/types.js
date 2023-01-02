@@ -36,6 +36,12 @@ export class Color {
     }
 
     static fromHsi(h, s, i) {
+        while (h < 0) {
+            h += 1;
+        }
+        while (h > 1) {
+            h -= 1;
+        }
         const h1 = h * 6;
         const z = 1 - Math.abs(h1 % 2 - 1);
         const c = (3 * i * s) / (1 + z);
@@ -146,7 +152,23 @@ export class Color {
     string() {
         return `(${this.r}, ${this.g}, ${this.b})`;
     }
+
+    blend(other, percent) {
+        return new Color(
+            this.r * (1 - percent) + other.r * percent,
+            this.g * (1 - percent) + other.g * percent,
+            this.b * (1 - percent) + other.b * percent,
+            this.a * (1 - percent) + other.a * percent,
+        );
+    }
 }
+
+export const black = new Color(0, 0, 0, 255);
+export const grey = new Color(127, 127, 127, 255);
+export const white = new Color(255, 255, 255, 255);
+export const red = new Color(255, 0, 0, 255);
+export const green = new Color(0, 255, 0, 255);
+export const blue = new Color(0, 0, 255, 255);
 
 export class Image {
     constructor(imageData) {

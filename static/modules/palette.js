@@ -1,5 +1,5 @@
 import { interpolate, twoColorBw } from "./gradient.js";
-import { Color, Palette } from "./types.js";
+import { Color, Palette, black, grey, white } from "./types.js";
 
 export function monochrome(src, steps, includeBlack=true, includeWhite=true) {
     if (steps == 0) {
@@ -76,4 +76,64 @@ export function duotoneSquare(color1, color2, steps) {
         }
     }
     return new Palette(result);
+}
+
+export function analogous(color) {
+    const hsi = color.hsi();
+    return tintsShadesPalette(new Palette([
+        Color.fromHsi(hsi[0] - 1/12, hsi[1], hsi[2]),
+        color,
+        Color.fromHsi(hsi[0] + 1/12, hsi[1], hsi[2]),
+    ]));
+}
+
+export function diad(color) {
+    const hsi = color.hsi();
+    return tintsShadesPalette(new Palette([
+        color,
+        Color.fromHsi(hsi[0] + 2/12, hsi[1], hsi[2]),
+    ]));
+}
+
+export function complementary(color) {
+    const hsi = color.hsi();
+    return tintsShadesPalette(new Palette([
+        color,
+        Color.fromHsi(hsi[0] + 6/12, hsi[1], hsi[2]),
+    ]));
+}
+
+export function splitComplementary(color) {
+    const hsi = color.hsi();
+    return tintsShadesPalette(new Palette([
+        Color.fromHsi(hsi[0] - 5 / 12, hsi[1], hsi[2]),
+        color,
+        Color.fromHsi(hsi[0] + 5 / 12, hsi[1], hsi[2]),
+    ]));
+}
+
+export function triadic(color) {
+    const hsi = color.hsi();
+    return tintsShadesPalette(new Palette([
+        Color.fromHsi(hsi[0] - 4 / 12, hsi[1], hsi[2]),
+        color,
+        Color.fromHsi(hsi[0] + 4 / 12, hsi[1], hsi[2]),
+    ]));
+}
+
+export function tintsShades(color) {
+    return new Palette([
+        color,
+        color.blend(white, 0.5),
+        color.blend(grey, 0.5),
+        color.blend(black, 0.5),
+    ]);
+}
+
+export function tintsShadesPalette(palette) {
+    const colors = [];
+    palette.colors.forEach((color) => {
+        colors.push(...tintsShades(color).colors);
+    });
+    return new Palette(colors);
 }
