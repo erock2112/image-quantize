@@ -35,6 +35,45 @@ export class Color {
         return new Color(rgb[0], rgb[1], rgb[2], 255);
     }
 
+    static fromHsi(h, s, i) {
+        const h1 = h * 6;
+        const z = 1 - Math.abs(h1 % 2 - 1);
+        const c = (3 * i * s) / (1 + z);
+        const x = c * z;
+        let r1, g1, b1;
+        if (h1 <= 1) {
+            r1 = c;
+            g1 = x;
+            b1 = 0;
+        } else if (h1 <= 2) {
+            r1 = x;
+            g1 = c;
+            b1 = 0;
+        } else if (h1 <= 3) {
+            r1 = 0;
+            g1 = c;
+            b1 = x;
+        } else if (h1 <= 4) {
+            r1 = 0;
+            g1 = x;
+            b1 = c;
+        } else if (h1 <= 5) {
+            r1 = x;
+            g1 = 0;
+            b1 = c;
+        } else {
+            r1 = c;
+            g1 = 0;
+            b1 = x;
+        }
+        const m = i * (1 - s);
+        return new Color(
+            Math.round((r1 + m) * 255),
+            Math.round((g1 + m) * 255),
+            Math.round((b1 + m) * 255),
+            255);
+    }
+
     hex() {
         const componentToHex = (component) => component.toString(16).padStart(2, "0");
         return `#${componentToHex(this.r)}${componentToHex(this.g)}${componentToHex(this.b)}`
@@ -56,6 +95,25 @@ export class Color {
 
     hsv() {
         return rgbToHsv(this.r, this.g, this.b);
+    }
+
+    hsi() {
+        const i = (this.r + this.g + this.b) / 3;
+        const m = Math.min(this.r, this.g, this.b);
+        let s = 0;
+        if (i > 0) {
+            s = 1 - (m / i);
+        }
+        let h = 0;
+        const denom = Math.sqrt(this.r * this.r + this.g * this.g + this.b * this.b - this.r * this.g - this.r * this.b - this.g * this.b);
+        if (denom > 0) {
+            h = Math.acos((this.r - this.g / 2 - this.b / 2) / denom);
+        }
+        if (this.g < this.b) {
+            h = 2 * Math.PI - h;
+        }
+        h = h / (2 * Math.PI);
+        return [h, s, i / 255];
     }
 
     luminosity() {
@@ -83,6 +141,10 @@ export class Color {
             (this.r * .272) + (this.g *.534) + (this.b * .131),
             this.a,
         );
+    }
+
+    string() {
+        return `(${this.r}, ${this.g}, ${this.b})`;
     }
 }
 
