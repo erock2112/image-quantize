@@ -17,6 +17,7 @@ import "./duotone-palette.js";
 import "./duotone-square-palette.js";
 import "./filter.js";
 import "./palette.js";
+import "./image-color-picker.js";
 import {getProcessors} from "../processor-registry.js";
 
 export class TransformerListEb extends LitElement {
