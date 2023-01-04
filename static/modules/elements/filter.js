@@ -11,23 +11,28 @@ export class FilterEb extends TransformerEb {
             ["sepia", (color) => color.sepia()],
             ["invert", (color) => color.invert()],
             ["saturation", (color) => {
-                const hsl = color.hsl();
-                hsl[1] *= this.parameterValue;
-                return Color.fromHsl(hsl[0], hsl[1], hsl[2]);
-            }, "Saturation"],
+                const hsi = color.hsi();
+                hsi[1] *= (this.parameterValue / 100);
+                return Color.fromHsi(hsi[0], hsi[1], hsi[2]);
+            }, "Percent", 0, 500, 100],
             ["hue rotation", (color) => {
-                const hsl = color.hsl();
-                hsl[0] *= this.parameterValue;
-                return Color.fromHsl(hsl[0], hsl[1], hsl[2]);
-            }, "Hue rotation"],
+                const hsi = color.hsi();
+                hsi[0] += (this.parameterValue / 360);
+                if (hsi[0] > 1) {
+                    hsi[0] -= 1;
+                }
+                return Color.fromHsi(hsi[0], hsi[1], hsi[2]);
+            }, "Degrees", 0, 360, 0],
             ["lightness", (color) => {
                 const hsl = color.hsl();
-                hsl[2] *= this.parameterValue;
+                hsl[2] *= (this.parameterValue / 100);
                 return Color.fromHsl(hsl[0], hsl[1], hsl[2]);
-            }, "Lightness"],
+            }, "Percent", 0, 500, 100],
         ];
         this._selectedIndex = 0;
         this._parameterValue = 1.0;
+        this._parameterMin = 0;
+        this._parameterMax = 500;
         this._process = (image) => [image.map(this.filters[this.selectedIndex][1])];
         this._renderContent = () => html`
         <div>
@@ -38,26 +43,33 @@ export class FilterEb extends TransformerEb {
                 `)}
             </select>
         </div>
-        <div>
-            ${this.filters[this.selectedIndex][2] ? html`
-            ${this.filters[this.selectedIndex][2]}:
+        <div style="visibility:${this.filters[this.selectedIndex][2] ? "visible" : "hidden"}">
+            ${this._parameterLabel}:
             <input type="range"
-                min=0 max=5 step="any"
-                value="${this.parameterValue}"
-                @input="${(e) => this._parameterValue = e.target.value}"
+                id="slider"
+                min="${this._parameterMin}"
+                max="${this._parameterMax}"
+                step="any"
+                .value="${this.parameterValue}"
+                @input="${(e) => this.handleInput(e)}"
                 @change="${(e) => this.parameterValue = e.target.value}"></input>
             <input type="number"
-                value="${this.parameterValue}"
-                @input="${(e) => this._parameterValue = e.target.value}"
+                id="number"
+                min="${this._parameterMin}"
+                max="${this._parameterMax}"
+                .value="${this.parameterValue}"
+                @input="${(e) => this.handleInput(e)}"
                 @change="${(e) => this.parameterValue = e.target.value}"></input>
-            ` : html``}
         </div>
-    `
+        `;
     }
 
     static properties = {
         _selectedIndex: {type: Number},
         _parameterValue: {type: Number},
+        _parameterLabel: {type: String},
+        _parameterMin: {type: Number},
+        _parameterMax: {type: Number},
     }
 
     get selectedIndex() {
@@ -65,7 +77,11 @@ export class FilterEb extends TransformerEb {
     }
     set selectedIndex(idx) {
         this._selectedIndex = idx;
-        this._parameterValue = 1.0;
+        const selectedFilter = this.filters[this._selectedIndex];
+        this._parameterLabel = selectedFilter[2];
+        this._parameterMin = selectedFilter[3];
+        this._parameterMax = selectedFilter[4];
+        this._parameterValue = selectedFilter[5];
         this.process(true);
     }
 
@@ -75,6 +91,17 @@ export class FilterEb extends TransformerEb {
     set parameterValue(v) {
         this._parameterValue = v;
         this.process(true);
+    }
+
+    handleInput(e) {
+        const slider = this.shadowRoot.getElementById("slider");
+        if (e.target !== slider) {
+            slider.value = e.target.value;
+        }
+        const number = this.shadowRoot.getElementById("number");
+        if (e.target !== number) {
+            number.value = e.target.value;
+        }
     }
 }
 registerProcessor("filter-eb", FilterEb);
